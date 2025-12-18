@@ -156,7 +156,7 @@ export class GraphicEngine {
         this.offscreenCtx.fillStyle = "red"
         this.offscreenCtx.closePath()
         this.offscreenCtx.stroke()
-        // this.ctx.fill()
+        // this.offscreenCtx.fill()
     }
     
     handleInput() {
@@ -186,7 +186,8 @@ export class GraphicEngine {
             this.offscreenCtx.clearRect(0,0, this.canvas.width, this.canvas.height)
             this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height)
             this.handleInput()
-            this.renderCube()
+            // this.renderCube()
+            this.renderSphere()
             
             this.ctx.drawImage(this.offscreenCanvas, 0, 0)
             requestAnimationFrame(callback)
