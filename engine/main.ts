@@ -1,14 +1,21 @@
-import { createDetailedCube, GraphicEngine, OJBModel } from './engines/engine'
-import { p } from './model'
+import { createDetailedCube, createSphere, EngineModel, GraphicEngine, OJBModel } from './engines/engine'
+import {model} from "./Roadster"
 
-const engine = new GraphicEngine()
-const sword = new OJBModel(p).convertToEngineModel()
+const engine = new GraphicEngine({
+    fov: 90, 
+    scale: 100,
+    Znear: 0.1,
+    Zfar: 100
+})
+engine.enableKeyboard()
+
+const sword = new OJBModel(model).convertToEngineModel()
 
 
 
 const frame = () => {
     engine.makeFrame((draw) => {
-        draw(sword, {angleY: Math.PI / 4 })
+        draw(sword)
     })
     requestAnimationFrame(frame)
 }

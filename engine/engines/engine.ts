@@ -1,4 +1,3 @@
-import { Point } from "jspdf"
 import { ScreenSettings } from "../interfaces"
 
 export class Pixel{
@@ -21,13 +20,13 @@ export class Point3 {
             other.x - this.x,
             other.y - this.y,
             other.z - this.z,
-            0  // w=0 для вектора
+            0,
         )
     }
 
     toScreenPixel(screen: ScreenSettings): Pixel {
-        const x = screen.centerX - this.x * screen.scale
-        const y = screen.centerY + this.y * screen.scale
+        const x = (screen.centerX ?? 450) - this.x * screen.scale
+        const y = (screen.centerY ?? 450) + this.y * screen.scale
         return new Pixel(x, y)
     }
 
@@ -195,25 +194,25 @@ export class Matrix4 {
         const f = 1 / Math.tan(settings.fov / 2)
         
         return new Matrix4([
-            f / settings.aspect, 0, 0, 0,
+            f / (settings.aspect || 1), 0, 0, 0,
             0, f, 0, 0,
             0, 0, -(settings.Zfar + settings.Znear) / (settings.Zfar - settings.Znear), -(2 * settings.Zfar * settings.Znear) / (settings.Zfar - settings.Znear),
             0, 0, -1, 0
         ])
     }
 
-    // static lookAt(eye: Vector, target: Vector, up: Vector): Matrix4 {
-    //     const z = eye.subtract(target).normalize()
-    //     const x = up.cross(z).normalize()
-    //     const y = z.cross(x).normalize()
+    static lookAt(eye: Vector3, target: Vector3, up: Vector3): Matrix4 {
+        const z = eye.subtract(target).normalize()
+        const x = up.cross(z).normalize()
+        const y = z.cross(x).normalize()
         
-    //     return new Matrix4([
-    //         x.x, y.x, z.x, 0,
-    //         x.y, y.y, z.y, 0,
-    //         x.z, y.z, z.z, 0,
-    //         -x.dot(eye), -y.dot(eye), -z.dot(eye), 1
-    //     ])
-    // }
+        return new Matrix4([
+            x.x, y.x, z.x, 0,
+            x.y, y.y, z.y, 0,
+            x.z, y.z, z.z, 0,
+            -x.dot(eye), -y.dot(eye), -z.dot(eye), 1
+        ])
+    }
 
     transform(p: Point3): Point3 {
         const x = this.m[0] * p.x + this.m[4] * p.y + this.m[8] * p.z + this.m[12] * p.w
@@ -248,28 +247,22 @@ export function createDetailedCube(centerX: number, centerY: number, centerZ: nu
     const polygons: Polygon3[] = []
     
     const vertices = [
-        new Point3(-half, -half, -half),  // 0: лево-низ-зад
-        new Point3( half, -half, -half),  // 1: право-низ-зад
-        new Point3( half,  half, -half),  // 2: право-верх-зад
-        new Point3(-half,  half, -half),  // 3: лево-верх-зад
-        new Point3(-half, -half,  half),  // 4: лево-низ-перед
-        new Point3( half, -half,  half),  // 5: право-низ-перед
-        new Point3( half,  half,  half),  // 6: право-верх-перед
-        new Point3(-half,  half,  half),  // 7: лево-верх-перед
+        new Point3(-half, -half, -half),
+        new Point3( half, -half, -half),
+        new Point3( half,  half, -half),
+        new Point3(-half,  half, -half),
+        new Point3(-half, -half,  half),
+        new Point3( half, -half,  half),
+        new Point3( half,  half,  half),
+        new Point3(-half,  half,  half),
     ]
     
     const faces = [
-        // Передняя грань (Z = +half)
-        [4, 5, 6, 7],  // Все нормали наружу
-        // Задняя грань (Z = -half)
-        [1, 0, 3, 2],  // Обратный порядок чтобы нормаль наружу
-        // Верхняя грань (Y = +half)
+        [4, 5, 6, 7],
+        [1, 0, 3, 2],
         [3, 7, 6, 2],
-        // Нижняя грань (Y = -half)
         [1, 5, 4, 0],
-        // Правая грань (X = +half)
         [5, 1, 2, 6],
-        // Левая грань (X = -half)
         [0, 4, 7, 3],
     ]
     
@@ -286,7 +279,7 @@ export function createDetailedCube(centerX: number, centerY: number, centerZ: nu
 }
 
 
-export function createSphere(centerX: number, centerY: number, centerZ: number, radius: number = 1, segments: number = 16): Polygon3[] {
+export function createSphere(centerX: number, centerY: number, centerZ: number, radius: number = 1, segments: number = 16) {
     const polygons: Polygon3[] = []
     const vertices: Point3[] = []
 
@@ -328,23 +321,9 @@ export function createSphere(centerX: number, centerY: number, centerZ: number, 
         }
     }
     
-    return polygons
+    return new EngineModel(polygons)
 }
 
-class PolygonManager{
-    constructor(
-        private sphere = createSphere(0, 0, 0, 1, 16),
-        private cube = createDetailedCube(0, 0, 0, 1, 2)
-    ) {}
-
-    spherePolygons() {
-        return this.sphere
-    }
-
-    cubePolygons() {
-        return this.cube
-    }
-}
 
 export class OJBModel{
     constructor(
@@ -409,23 +388,23 @@ export class OJBModel{
 }
 
 interface ModelSettings {
-    offsetX?: number,
-    offsetY?: number,
-    offsetZ?: number,
-    angleX?: number,
-    angleY?: number,
-    angleZ?: number,
-    color?: `rgb(${number},${number},${number})`,
+    offsetX?: number
+    offsetY?: number
+    offsetZ?: number
+    angleX?: number
+    angleY?: number
+    angleZ?: number
+    color?: `rgb(${number},${number},${number})`
     debugMode?: boolean
 }
 
 export class EngineModel{
     constructor(
-        public polygons: Polygon3[],
+        public polygons: Polygon3[]
     ){}
 }
 
-export type EngineDrawer = (model: EngineModel, settings: ModelSettings) => void
+export type EngineDrawer = (model: EngineModel, settings?: ModelSettings) => void
 
 export class GraphicEngine {
     private polygonQueue: Array<{
@@ -435,91 +414,168 @@ export class GraphicEngine {
         dot: number
     }> = []
     
+    private lightVector: Vector3 = new Vector3(1, 1, -1)
+    private cameraVectorUp: Vector3 = new Vector3(0, 1, 0)
+    private cameraPosition: Vector3 = new Vector3(0, 0, 1)
+    private cameraTarget: Vector3 = new Vector3(0, 0, 0)
+    private cameraForward: Vector3 = new Vector3(0, 0, -1)
+    private cameraYaw: number = 0  // Поворот по горизонтали
+    private cameraPitch: number = 0  // Наклон по вертикали
+    
+    private viewMatrix: Matrix4 = new Matrix4()
+    private projectionMatrix: Matrix4 = new Matrix4()
+    private MVPMatrix: Matrix4 = new Matrix4()
+    
+    private canvas: HTMLCanvasElement
+    private ctx: CanvasRenderingContext2D
     private offscreenCanvas: HTMLCanvasElement
     private offscreenCtx: CanvasRenderingContext2D
 
+    public keys = new Set<string>()
+    public cameraSpeed = 0.1
+    public mouseSensitivity = 0.002
+    private mouseLocked: boolean = false
+
     constructor(
-        private canvas = <HTMLCanvasElement> document.getElementById("maincnv")!,
-        private ctx = canvas.getContext("2d")!,
-        private camera: ScreenSettings = {
-            fov: 90, 
-            centerX: canvas.width / 2, 
-            centerY: canvas.height / 2, 
-            scale: 100,
-            aspect: canvas.width / canvas.height,
-            Znear: 0.1
-            ,
-            Zfar: 100
-        },
-        private projectionMatrix = Matrix4.getProjectionMatrix(camera),
-        private position = new Vector3(0,0,2),
-        private cameraSpeed = 0.1,
-        public keys = new Set<string>(),
+        private screenSettings: ScreenSettings,
     ) {
-        window.addEventListener('keydown', (e) => {
-            this.keys.add(e.key.toLowerCase())
-        })
-        console.log(this.canvas.width);
+        this.canvas = document.getElementById("maincnv") as HTMLCanvasElement
+        this.ctx = this.canvas.getContext("2d")!
         
-
-        window.addEventListener('keyup', (e) => {
-            this.keys.delete(e.key.toLowerCase())
-        })
-
         this.offscreenCanvas = document.createElement('canvas')
-        this.offscreenCanvas.width = this.canvas.width
-        this.offscreenCanvas.height = this.canvas.height
-        this.offscreenCtx = this.offscreenCanvas.getContext('2d')!
+        this.offscreenCtx = this.offscreenCanvas.getContext("2d")!
+
+        this.updateCameraSettings()
+        this.updateProjectonMatrix()
+        this.updateCameraDirection()
+        this.updateViewMatrix()
+        this.updateMVPMatrix()
+        this.initOffscreenCanvas()
     }
 
+    // private setupMouseControl() {
+    //     this.canvas.addEventListener('click', () => {
+    //         this.canvas.requestPointerLock()
+    //     })
+    //     document.addEventListener('pointerlockchange', () => {
+    //         this.mouseLocked = document.pointerLockElement === this.canvas
+    //     })
+        
+    //     document.addEventListener('mousemove', (e) => {
+    //         if (this.mouseLocked) {
+    //             this.handleMouseMove(e.movementX, e.movementY)
+    //         }
+    //     })
+    // }
+
+    // private handleMouseMove(deltaX: number, deltaY: number) {
+    //     this.cameraYaw -= deltaX * this.mouseSensitivity
+    //     this.cameraPitch -= deltaY * this.mouseSensitivity
+        
+    //     this.cameraPitch = Math.max(-Math.PI/2 + 0.01, Math.min(Math.PI/2 - 0.01, this.cameraPitch))
+        
+    //     this.updateCameraDirection()
+    // }
+
+    private updateCameraDirection() {
+        this.cameraForward = new Vector3(
+            Math.sin(this.cameraYaw) * Math.cos(this.cameraPitch),
+            Math.sin(this.cameraPitch),
+            Math.cos(this.cameraYaw) * Math.cos(this.cameraPitch)
+        ).normalize()
+        
+        this.updateViewMatrix()
+    }
+
+    private updateProjectonMatrix() {
+        this.projectionMatrix = Matrix4.getProjectionMatrix(this.screenSettings)
+    }
+
+    private updateMVPMatrix() {
+        this.MVPMatrix = this.viewMatrix.multiply(this.projectionMatrix)
+    }
+    
+    private updateViewMatrix() {
+        this.cameraTarget = new Vector3(
+            this.cameraPosition.x + this.cameraForward.x,
+            this.cameraPosition.y + this.cameraForward.y,
+            this.cameraPosition.z + this.cameraForward.z
+        )
+        
+        const eye = this.cameraPosition
+        const target = this.cameraTarget
+        const up = this.cameraVectorUp
+        this.viewMatrix = Matrix4.lookAt(eye, target, up)
+    }
+
+    private updateCameraSettings() {
+        this.screenSettings = {
+            ...this.screenSettings,
+            centerX: this.canvas.width / 2,
+            centerY: this.canvas.height / 2,
+            aspect: this.canvas.width / this.canvas.height
+        }
+    }
+
+    private initOffscreenCanvas() {
+        this.offscreenCanvas.width = this.canvas.width
+        this.offscreenCanvas.height = this.canvas.height
+    }
 
     private renderModel(model: EngineModel, settings: ModelSettings) {
         let matrix: Matrix4 = new Matrix4()
         if (settings.angleX) {
             matrix = matrix.multiply(Matrix4.rotationX(settings.angleX))
         }
-
         if (settings.angleY) {
             matrix = matrix.multiply(Matrix4.rotationY(settings.angleY))
         }
-        
         if (settings.angleZ) {
             matrix = matrix.multiply(Matrix4.rotationZ(settings.angleZ))
         }
         
         for (const polygon of model.polygons) {
             const points = polygon.spread().map(p => matrix.transform(p))
-            const newPoly = new Polygon3(
-                points[0],
-                points[1], 
-                points[2],
-            )
-            let translatedPolygon: Polygon3 = newPoly
-                .addVector(this.position)
+            let newPoly = new Polygon3(points[0], points[1], points[2])
 
             if (settings.offsetX || settings.offsetY || settings.offsetZ) {
-                translatedPolygon = translatedPolygon.addVector(
+                newPoly = newPoly.addVector(
                     new Vector3(
-                        settings.offsetX || 0, 
-                        settings.offsetY || 0, 
+                        settings.offsetX || 0,
+                        settings.offsetY || 0,
                         settings.offsetZ || 0
                     )
-                )   
+                )
             }
-            this.addPolygonToQueue(translatedPolygon, settings.color || "green")
+            this.addPolygonToQueue(newPoly, settings.color || "green")
         }
     }
 
     private addPolygonToQueue(polygon: Polygon3, color: string) {
         const [p1, p2, p3] = polygon.spread()
-        
-        const normalVector = polygon.normal()
+
+        const p1Camera = this.viewMatrix.transform(p1)
+        const p2Camera = this.viewMatrix.transform(p2)
+        const p3Camera = this.viewMatrix.transform(p3)
+
+        const cameraPolygon = new Polygon3(p1Camera, p2Camera, p3Camera)
+
         const center = polygon.center()
-        const viewVector = center.vectorTo(new Point3(0,0,0))
+        const normalVector = polygon.normal()
+
+        const viewVector = new Vector3(
+            center.x - this.cameraPosition.x,
+            center.y - this.cameraPosition.y,
+            center.z - this.cameraPosition.z
+        )
+
         const dot = viewVector.normalize().dot(normalVector.normalize())
-        if (dot < 0) return
+
+        if (dot > 0) {
+            return
+        }
         
-        if (p1.z < 0.1 || p2.z < 0.1 || p3.z < 0.1) {
+        if (cameraPolygon.center().z < 0.1) {
             return
         }
         
@@ -529,102 +585,19 @@ export class GraphicEngine {
             polygon,
             color,
             depth: avgDepth,
-            dot: dot
+            dot: Math.max(0, dot)
         })
     }
 
-    private drawPolygon(polygon: Polygon3, color: `rgb(${number},${number},${number})`| "green" ) {
+    private drawPolygon(polygon: Polygon3, color: string) {
         const [p1, p2, p3] = polygon.spread()
+        
         const normalVector = polygon.normal()
-        const center = polygon.center()
+        const dot = this.lightVector.normalize().dot(normalVector.normalize())
         
-        const viewVector = center.vectorTo(new Point3(0,0,0))
-        
-        const dot = viewVector.normalize().dot(normalVector.normalize())
-        if (dot < 0) return
-
-        if (p1.z < 0.1 || p2.z < 0.1 || p3.z < 0.1) {
-            return
-        }
-        
-        const pj1 = this.projectionMatrix.transform(p1)
-        const pj2 = this.projectionMatrix.transform(p2)
-        const pj3 = this.projectionMatrix.transform(p3)
-        
-        const px1 = pj1.toScreenPixel(this.camera)
-        const px2 = pj2.toScreenPixel(this.camera)
-        const px3 = pj3.toScreenPixel(this.camera)
-        let RGB: string
-        if (color === "green") {
-            const dia = 50 + 150 * Math.max(0, dot)
-            RGB = `rgb(${dia},${255 },${dia})`
-        } else {
-            RGB = color
-        }
-
-
-        this.offscreenCtx.beginPath()
-        this.offscreenCtx.moveTo(px1.x, px1.y)
-        this.offscreenCtx.lineTo(px2.x, px2.y)
-        this.offscreenCtx.lineTo(px3.x, px3.y)
-        this.offscreenCtx.fillStyle = RGB
-        this.offscreenCtx.closePath()
-        this.offscreenCtx.fill()
-    }
-
-    private drawDebugNormals(polygon: Polygon3) {
-        const normal = polygon.normal()
-        const center = polygon.center()
-        const normalEnd = center.addVector(normal.multiplyScalar(0.2))
-    
-        const pjcenter = this.projectionMatrix.transform(center)
-        const pjnormalend = this.projectionMatrix.transform(normalEnd)
-
-        const pixelCenter = pjcenter.toScreenPixel(this.camera)
-        const pixelNormalEnd = pjnormalend.toScreenPixel(this.camera)
-    
-        
-        this.offscreenCtx.beginPath()
-        this.offscreenCtx.moveTo(pixelCenter.x, pixelCenter.y)
-        this.offscreenCtx.lineTo(pixelNormalEnd.x, pixelNormalEnd.y)
-        this.offscreenCtx.strokeStyle = "blue"
-        this.offscreenCtx.lineWidth = 2
-        this.offscreenCtx.stroke()
-        this.offscreenCtx.lineWidth = 1
-        this.offscreenCtx.strokeStyle = "black"
-    }
-    
-    private handleInput() {
-        if (this.keys.has('w')) {
-            this.position.z -= this.cameraSpeed
-        }
-        if (this.keys.has('s')) {
-            this.position.z += this.cameraSpeed
-        }
-        if (this.keys.has('a')) {
-            this.position.x += this.cameraSpeed
-        }
-        if (this.keys.has('d')) {
-            this.position.x -= this.cameraSpeed
-        }
-        if (this.keys.has('q')) {
-            this.position.y += this.cameraSpeed
-        }
-        if (this.keys.has('e')) {
-            this.position.y -= this.cameraSpeed
-        }
-    }
-
-    private drawPolygonDirectly(polygon: Polygon3, color: string, dot: number) {
-        const [p1, p2, p3] = polygon.spread()
-        
-        const pj1 = this.projectionMatrix.transform(p1)
-        const pj2 = this.projectionMatrix.transform(p2)
-        const pj3 = this.projectionMatrix.transform(p3)
-        
-        const px1 = pj1.toScreenPixel(this.camera)
-        const px2 = pj2.toScreenPixel(this.camera)
-        const px3 = pj3.toScreenPixel(this.camera)
+        const px1 = this.MVPMatrix.transform(p1).toScreenPixel(this.screenSettings)
+        const px2 = this.MVPMatrix.transform(p2).toScreenPixel(this.screenSettings)
+        const px3 = this.MVPMatrix.transform(p3).toScreenPixel(this.screenSettings)
         
         let RGB: string
         if (color === "green") {
@@ -648,6 +621,8 @@ export class GraphicEngine {
         this.offscreenCtx.clearRect(0,0, this.canvas.width, this.canvas.height)
         this.polygonQueue = []
         this.handleInput()
+        this.updateViewMatrix()
+        this.updateMVPMatrix()
 
         const drawer = (model: EngineModel, settings?: ModelSettings) => {
             this.renderModel(model, settings || {})
@@ -656,10 +631,65 @@ export class GraphicEngine {
         
         this.polygonQueue.sort((a, b) => b.depth - a.depth)
         
-        for (const item of this.polygonQueue) {
-            this.drawPolygonDirectly(item.polygon, item.color, item.dot)
+        for (const item of this.polygonQueue) { 
+            this.drawPolygon(item.polygon, item.color)
         }
         
         this.ctx.drawImage(this.offscreenCanvas, 0, 0)
     }
-}
+
+    enableKeyboard() {
+        window.addEventListener('keydown', (e) => {
+            this.keys.add(e.key.toLowerCase())
+        })
+        
+        window.addEventListener('keyup', (e) => {
+            this.keys.delete(e.key.toLowerCase())
+        })
+    }
+    
+    private handleInput() {
+        if (this.keys.has('w')) {
+            this.cameraPosition.x -= this.cameraForward.x * this.cameraSpeed
+            this.cameraPosition.z -= this.cameraForward.z * this.cameraSpeed
+        }
+        if (this.keys.has('s')) {
+            this.cameraPosition.x += this.cameraForward.x * this.cameraSpeed
+            this.cameraPosition.z += this.cameraForward.z * this.cameraSpeed
+        }
+        if (this.keys.has('a')) {
+            const left = this.cameraForward.cross(this.cameraVectorUp).normalize()
+            this.cameraPosition.x -= left.x * this.cameraSpeed
+            this.cameraPosition.z -= left.z * this.cameraSpeed
+        }
+        if (this.keys.has('d')) {
+            const right = this.cameraVectorUp.cross(this.cameraForward).normalize()
+            this.cameraPosition.x -= right.x * this.cameraSpeed
+            this.cameraPosition.z -= right.z * this.cameraSpeed
+        }
+        
+        if (this.keys.has('q')) {
+            this.cameraPosition.y -= this.cameraSpeed
+        }
+        if (this.keys.has('e')) {
+            this.cameraPosition.y += this.cameraSpeed
+        }
+
+        if (this.keys.has('arrowleft')) {
+            this.cameraYaw += 0.05
+            this.updateCameraDirection()
+        }
+        if (this.keys.has('arrowright')) {
+            this.cameraYaw -= 0.05
+            this.updateCameraDirection()
+        }
+        if (this.keys.has('arrowup')) {
+            this.cameraPitch = Math.min(Math.PI/2 - 0.01, this.cameraPitch + 0.05)
+            this.updateCameraDirection()
+        }
+        if (this.keys.has('arrowdown')) {
+            this.cameraPitch = Math.max(-Math.PI/2 + 0.01, this.cameraPitch - 0.05)
+            this.updateCameraDirection()
+        }
+    }
+} 
