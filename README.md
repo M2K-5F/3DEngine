@@ -2,7 +2,7 @@
 
 ## How start:
 
-bach```
+```bash
 npm i 
 
 npx parcel ./src/index.html
