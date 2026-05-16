@@ -1,6 +1,5 @@
-import { ScreenSettings } from "../types"
-import { Point3 } from "./point"
-import { Vector3 } from "./vector"
+import { Point3 } from "./point3"
+import type { Vector3 } from "./vector3"
 
 export class Matrix4 {
     constructor(
@@ -12,16 +11,16 @@ export class Matrix4 {
         ] as const 
     ) {}
 
-    static translation(tx: number, ty: number, tz: number): Matrix4 {
-        return new Matrix4([
-            1, 0, 0, tx,
-            0, 1, 0, ty,
-            0, 0, 1, tz,
-            0, 0, 0, 1
-        ])
-    }
+    static getTranslationMatrix(tx: number, ty: number, tz: number): Matrix4 {
+    return new Matrix4([
+        1,  0,  0,  0,
+        0,  1,  0,  0,
+        0,  0,  1,  0,
+        tx, ty, tz, 1 
+    ])
+}
 
-    static rotationY(angle: number): Matrix4 {
+    static getRotationYMatrix(angle: number): Matrix4 {
         const cos = Math.cos(angle)
         const sin = Math.sin(angle)
         return new Matrix4([
@@ -32,7 +31,7 @@ export class Matrix4 {
         ])
     }
 
-    static rotationX(angle: number): Matrix4 {
+    static getRotationXMatrix(angle: number): Matrix4 {
         const cos = Math.cos(angle)
         const sin = Math.sin(angle)
         return new Matrix4([
@@ -43,7 +42,7 @@ export class Matrix4 {
         ])
     }
 
-    static rotationZ(angle: number): Matrix4 {
+    static getRotationZMatrix(angle: number): Matrix4 {
         const cos = Math.cos(angle)
         const sin = Math.sin(angle)
         return new Matrix4([
@@ -54,21 +53,20 @@ export class Matrix4 {
         ])
     }
 
-    static getProjectionMatrix(settings: ScreenSettings): Matrix4 {
+    static getProjectionMatrix(settings: {fov: number, aspect: number, far: number, near: number}): Matrix4 {
         const f = 1 / Math.tan(settings.fov / 2)
-        
         return new Matrix4([
-            f / (settings.aspect || 1), 0, 0, 0,
+            f / settings.aspect, 0, 0, 0,
             0, f, 0, 0,
-            0, 0, -(settings.Zfar + settings.Znear) / (settings.Zfar - settings.Znear), -(2 * settings.Zfar * settings.Znear) / (settings.Zfar - settings.Znear),
-            0, 0, -1, 0
+            0, 0, settings.far / (settings.far - settings.near), 1,  // +Z в W
+            0, 0, -settings.near * settings.far / (settings.far - settings.near), 0
         ])
     }
 
-    static lookAt(eye: Vector3, target: Vector3, up: Vector3): Matrix4 {
-        const z = eye.subtract(target).normalize()
-        const x = up.cross(z).normalize()
-        const y = z.cross(x).normalize()
+    static getLookAtMatrix(eye: Point3, target: Point3, up: Vector3): Matrix4 {
+        const z = target.subtract(eye).normalize()
+        const x = z.cross(up).normalize()
+        const y = x.cross(z).normalize()    
         
         return new Matrix4([
             x.x, y.x, z.x, 0,
@@ -78,20 +76,16 @@ export class Matrix4 {
         ])
     }
 
-    transform(p: Point3): Point3 {
+    transformPoint(p: Point3): Point3 {
         const x = this.m[0] * p.x + this.m[4] * p.y + this.m[8] * p.z + this.m[12] * p.w
         const y = this.m[1] * p.x + this.m[5] * p.y + this.m[9] * p.z + this.m[13] * p.w
         const z = this.m[2] * p.x + this.m[6] * p.y + this.m[10] * p.z + this.m[14] * p.w
         const w = this.m[3] * p.x + this.m[7] * p.y + this.m[11] * p.z + this.m[15] * p.w
-        return new Point3(
-            x / w,
-            y / w,
-            z / w,
-            w
-        )
+        
+        return new Point3(x, y, z, w) 
     }
 
-    multiply(other: Matrix4): Matrix4 {
+    multiplyBy(other: Matrix4): Matrix4 {
         const result = new Array(16).fill(0)
         for (let i = 0; i < 4; i++) {
             for (let j = 0; j < 4; j++) {
@@ -103,5 +97,14 @@ export class Matrix4 {
             }
         }
         return new Matrix4(result)
+    }
+
+    static getScaleMatrix(x: number, y: number, z: number): Matrix4 {
+        return new Matrix4([
+            x, 0, 0, 0,
+            0, y, 0, 0,
+            0, 0, z, 0,
+            0, 0, 0, 1
+        ]);
     }
 }

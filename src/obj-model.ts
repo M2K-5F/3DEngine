@@ -1,6 +1,6 @@
 import { EngineModel } from "./engine-model"
-import { Point3 } from './maths/point'
-import { Polygon3 } from './maths/polygon'
+import { Point3 } from "./maths/point3"
+import { Polygon3 } from "./maths/polygon3"
 
 export class OJBModel extends EngineModel {
     constructor(model: string) {

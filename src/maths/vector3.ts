@@ -1,3 +1,5 @@
+import type { Point3 } from "./point3"
+
 export class Vector3 {
     constructor (
         public x: number,
@@ -51,11 +53,11 @@ export class Vector3 {
             this.y * other.z - this.z * other.y,
             this.z * other.x - this.x * other.z,
             this.x * other.y - this.y * other.x,
-            this.w
+            0
         )
     }
 
-    dot(other: Vector3): number {
+    dot(other: Vector3 | Point3): number {
         return this.x * other.x + this.y * other.y + this.z * other.z
     }
 }

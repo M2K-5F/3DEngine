@@ -1,9 +1,9 @@
-import { EngineModel } from "../engine"
-import { Point3 } from "../maths/point"
-import { Polygon3 } from '../maths/polygon'
+import { EngineModel } from "../engine-model"
+import { Point3 } from "../maths/point3"
+import { Polygon3 } from "../maths/polygon3"
 
 export class Sphere extends EngineModel {
-    create(centerX: number, centerY: number, centerZ: number, radius: number = 1, segments: number = 16): Sphere {
+    constructor( radius: number = 1, segments: number = 16) {
         const polygons: Polygon3[] = []
         const vertices: Point3[] = []
 
@@ -17,9 +17,9 @@ export class Sphere extends EngineModel {
                 const sinLon = Math.sin(lon)
                 const cosLon = Math.cos(lon)
                 
-                const x = centerX + radius * sinLat * cosLon
-                const y = centerY + radius * cosLat
-                const z = centerZ + radius * sinLat * sinLon
+                const x = radius * sinLat * cosLon
+                const y = radius * cosLat
+                const z = radius * sinLat * sinLon
                 
                 vertices.push(new Point3(x, y, z))
             }
@@ -45,6 +45,6 @@ export class Sphere extends EngineModel {
             }
         }
         
-        return new Sphere(polygons)
+        super(polygons)
     }
 }

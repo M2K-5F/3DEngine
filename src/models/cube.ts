@@ -1,10 +1,11 @@
-import { EngineModel } from "../engine"
-import { Point3 } from "../maths/point"
-import { Polygon3 } from "../maths/polygon"
+
+import { EngineModel } from "../engine-model"
+import { Point3 } from "../maths/point3"
+import { Polygon3 } from "../maths/polygon3"
 
 
 export class Cube extends EngineModel {
-    create(size: number = 1): Cube  {
+    constructor(size: number = 1) {
         const half = size / 2
         const polygons: Polygon3[] = []
         
@@ -37,6 +38,6 @@ export class Cube extends EngineModel {
             )
         }
         
-        return new Cube(polygons)
+        super(polygons)
     }
 }
