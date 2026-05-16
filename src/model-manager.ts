@@ -1,4 +1,5 @@
 import type { EngineModel } from "./engine-model"
+import type { PolygonTransformUnit } from "./interfaces"
 import { Matrix4 } from "./maths/matrix4"
 import type { Point3 } from "./maths/point3"
 import type { Vector3 } from "./maths/vector3"
@@ -11,6 +12,9 @@ type ModelConfig = {
 
 
 export class ModelManager {
+    private matrix = new Matrix4()
+    private matrixNeedsUpdate = true
+
     private _geometry: EngineModel
     private config: ModelConfig
     private _color = 'green'
@@ -21,8 +25,23 @@ export class ModelManager {
         this.config = config
     }
 
+    getTransformedPolygonUnits() {
+        if (this.matrixNeedsUpdate) this._updateMatrix()
 
-    getModelMatrix(): Matrix4 {
+        return this._geometry.polygons.map((polygon): PolygonTransformUnit => {
+            const worldPolygon = polygon.transformByMatrix(this.matrix)
+
+            return {
+                polygon: worldPolygon,
+                worldNormal: worldPolygon.normal(),
+                color: this.color,
+                lightIntensity: 0,
+            }
+        })        
+    }
+
+
+    private _updateMatrix() {
         const { position, rotation, scale } = this.config
         
         let matrix = new Matrix4()
@@ -43,17 +62,18 @@ export class ModelManager {
             Matrix4.getRotationZMatrix(rotation.z)
         )
 
-        matrix = matrix.multiplyBy(Matrix4.getTranslationMatrix(position.x, position.y, position.z))
-        
-        return matrix
+        this.matrix = matrix.multiplyBy(Matrix4.getTranslationMatrix(position.x, position.y, position.z))
+        this.matrixNeedsUpdate = false
     }
 
     setRotation(rotation: { x: number, y: number, z: number }) {
         this.config.rotation = rotation
+        this.matrixNeedsUpdate = true
     }
 
     updatePosition(newPosition: Point3) {
         this.config.position = newPosition
+        this.matrixNeedsUpdate = true
     }
 
 

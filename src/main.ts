@@ -13,20 +13,17 @@ import { Vector3 } from './maths/vector3'
 import { KeyboardCameraController } from './controllers/keyboard-controller'
 import { MouseController } from './controllers/mouse-controller'
 
+const WIDTH = 1400, HEIGHT = 800
 
 const camera = new Camera()
 const keyboardController = new KeyboardCameraController(camera)
 const mouseController = new MouseController(camera)
 
-const projector = new Projector({ fov: Math.PI/1.5, aspect: 800/600, near: 0.1, far: 100 })
+const projector = new Projector({ fov: Math.PI/1.5, aspect: WIDTH/HEIGHT, near: 0.1, far: 100 })
 const lighting = new DiffuseLighting(new Vector3(1, 1, -1).normalize())
 const renderer = new CanvasRenderer({
-    fov: Math.PI / 2,
-    far: 100,
-    near: 0.1,
-    height: 800,
-    width: 1400,
-    scale: 100,
+    height: HEIGHT,
+    width: WIDTH
 })
 
 
@@ -36,7 +33,7 @@ const engine = new Engine(renderer)
     .addPolygonTransformer(projector)  
 
 
-const cube = new ModelManager(new Sphere(), {
+const cube = new ModelManager(new Sphere(2, 50), {
     position: new Point3(0, 0, 0),
     rotation: {x: 0, y: 0, z: 0},
     scale: new Vector3(1, 1, 1)

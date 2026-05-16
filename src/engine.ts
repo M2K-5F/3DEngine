@@ -1,4 +1,4 @@
-import type { IRenderer, PolygonTransformer, PolygonTransformUnit } from './interfaces'
+import type { IRenderer, PolygonTransformer } from './interfaces'
 import type { ModelManager } from './model-manager'
 
 
@@ -32,22 +32,10 @@ export class Engine {
     makeFrame() {
         this.renderer.clearFrame()
         
-        this.models.forEach(model => {
-            const modelMatrix = model.getModelMatrix()
-            
-            model.geometry.polygons.forEach(polygon => {   
-                const worldPolygon = polygon.transformByMatrix(modelMatrix)
-
-                let unit: PolygonTransformUnit = {
-                    polygon: worldPolygon,
-                    color: model.color,
-                    lightIntensity: 0,
-                    worldNormal: worldPolygon.normal()
-                }
-
+        this.models.forEach(model => {            
+            model.getTransformedPolygonUnits().forEach(unit => {
                 for (const transformer of this.transformFlow) {
-                    const result = transformer.transformPolygon(unit)
-                    if (!result) return
+                    if (!transformer.transformPolygon(unit)) return 
                 }
                 
                 this.renderer.addPolygon(unit)

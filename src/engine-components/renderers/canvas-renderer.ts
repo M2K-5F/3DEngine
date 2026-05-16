@@ -1,10 +1,6 @@
 import type { IRenderer, PolygonTransformUnit } from "../../interfaces"
 
 export type RendererConfig = {
-    fov: number
-    near: number
-    far: number
-    scale: number
     width: number
     height: number    
 }
