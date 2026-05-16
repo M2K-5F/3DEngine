@@ -58,7 +58,7 @@ export class Matrix4 {
         return new Matrix4([
             f / settings.aspect, 0, 0, 0,
             0, f, 0, 0,
-            0, 0, settings.far / (settings.far - settings.near), 1,  // +Z в W
+            0, 0, settings.far / (settings.far - settings.near), 1,
             0, 0, -settings.near * settings.far / (settings.far - settings.near), 0
         ])
     }

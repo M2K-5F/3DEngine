@@ -3,7 +3,7 @@
 ## How start:
 
 ```bash
-npm i 
+bun install
 
-npx parcel ./src/index.html
+bunx vite
 ```
