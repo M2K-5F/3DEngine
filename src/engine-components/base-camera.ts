@@ -1,5 +1,5 @@
-import type { ICamera, PolygonTransformUnit } from "../interfaces"
-import { Matrix4 } from "../maths/matrix4"
+import type { ICamera } from "../interfaces"
+import { Matrix4, MatrixFabric } from "../maths/matrix4"
 import { Point3 } from "../maths/point3"
 import { Vector3 } from "../maths/vector3"
 
@@ -14,27 +14,24 @@ export class Camera implements ICamera {
         right: new Vector3(1, 0, 0),
     }
     private target = new Point3(0, 0, 0)
-    private rotation = {horizontal: 0, vertical: 0}
-    
+    private rotation = { horizontal: 0, vertical: 0 }
+
 
     private _updateViewMatrix() {
-        this.viewMatrix = Matrix4.getLookAtMatrix(
+        this.viewMatrix = MatrixFabric.getLookAtMatrix(
             this.position, 
             this.target, 
             this.directions.up
         )
+
+        this.matrixNeedsUpdate = false
     }
 
-    public transformPolygon(unit: PolygonTransformUnit) {
-        if (unit.polygon.isBackface(this.position)) return false
-
+    public getMatrix(): Matrix4 {
         if (this.matrixNeedsUpdate) this._updateViewMatrix()
-        unit.polygon = unit.polygon.transformByMatrix(this.viewMatrix)
-        if (unit.polygon.center().z < 0.5) return false
-        
-        return true
-    }
 
+        return this.viewMatrix
+    }
 
     rotate(deltaX: number, deltaY: number) {
         this.rotation.horizontal += deltaX
@@ -79,5 +76,5 @@ export class Camera implements ICamera {
     }
 
 
-    getPosition() {return this.position}
+    getPosition() { return this.position }
 }

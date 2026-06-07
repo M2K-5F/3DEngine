@@ -1,5 +1,5 @@
-import type { IProjector, PolygonTransformUnit } from "../interfaces"
-import { Matrix4 } from "../maths/matrix4"
+import type { IProjector } from "../interfaces"
+import { Matrix4, MatrixFabric } from "../maths/matrix4"
 
 type ProjectorConfig = {
     aspect: number
@@ -18,14 +18,13 @@ export class Projector implements IProjector {
     }
 
     private _updateMatrix() {
-        this.projectionMatrix = Matrix4.getProjectionMatrix(this.config)
+        this.projectionMatrix = MatrixFabric.getProjectionMatrix(this.config)
         this.matrixNeedsUpdate = false
     }
 
-    transformPolygon(unit: PolygonTransformUnit): boolean {
+    public getMatrix(): Matrix4 {
         if (this.matrixNeedsUpdate) this._updateMatrix()
-        unit.polygon = unit.polygon.transformByMatrix(this.projectionMatrix)
-    
-        return true
+
+        return this.projectionMatrix
     }
 }

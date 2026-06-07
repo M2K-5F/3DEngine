@@ -1,58 +1,43 @@
-import {Sphere} from './models/sphere'
-import { GuyWithPipisi } from './models/guy-with-pipisa'
-import {Cube} from './models/cube'
-import { TigerTank } from './models/tiger-tank'
 import { Camera } from './engine-components/base-camera'
 import { Projector } from './engine-components/base-projector'
-import { DiffuseLighting } from './engine-components/diffuse-lightning'
-import { CanvasRenderer } from './engine-components/renderers/canvas-renderer'
+import { CanvasRenderer } from './engine-components/canvas-renderer'
 import { Engine } from './engine'
-import { ModelManager } from './model-manager'
-import { Point3 } from './maths/point3'
-import { Vector3 } from './maths/vector3'
 import { KeyboardCameraController } from './controllers/keyboard-controller'
 import { MouseController } from './controllers/mouse-controller'
+import { Point3 } from './maths/point3'
+import { TigerTank } from './models/tiger-tank'
+import { Vector3 } from './maths/vector3'
 
 const WIDTH = 1400, HEIGHT = 800
 
 const camera = new Camera()
 const keyboardController = new KeyboardCameraController(camera)
-const mouseController = new MouseController(camera)
+new MouseController(camera)
 
-const projector = new Projector({ fov: Math.PI/1.5, aspect: WIDTH/HEIGHT, near: 0.1, far: 100 })
-const lighting = new DiffuseLighting(new Vector3(1, 1, -1).normalize())
+const projector = new Projector({ fov: Math.PI/2, aspect: WIDTH/HEIGHT, near: 0.1, far: 100 })
 const renderer = new CanvasRenderer({
     height: HEIGHT,
     width: WIDTH
 })
 
 
-const engine = new Engine(renderer)
-    .addPolygonTransformer(camera)
-    .addPolygonTransformer(lighting)
-    .addPolygonTransformer(projector)  
+const engine = new Engine(renderer, camera, projector)
 
 
-const cube = new ModelManager(new Sphere(2, 50), {
+
+const controller = engine.addModel(TigerTank, {
     position: new Point3(0, 0, 0),
     rotation: {x: 0, y: 0, z: 0},
     scale: new Vector3(1, 1, 1)
-})
-
-
-engine.addModel(cube, 1)    
+})    
 let ratio = 0
 
-function animate() {
+engine.loop(() => {
     keyboardController.update()
-    ratio = ratio += 0.04
     
+    ratio = ratio += 0.04
     const move = Math.sin(ratio)
     
-    cube.setRotation({x: ratio, y: ratio, z: 0})
-    cube.updatePosition(new Point3(0, 0, move))
-    engine.makeFrame()
-    requestAnimationFrame(animate)
-}
-
-animate()
+    controller.setRotation({x: ratio, y: ratio, z: 0})
+    controller.updatePosition(new Point3(0, 0, move))
+})

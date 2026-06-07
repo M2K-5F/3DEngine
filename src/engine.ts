@@ -1,47 +1,53 @@
-import type { IRenderer, PolygonTransformer } from './interfaces'
-import type { ModelManager } from './model-manager'
+import type { ICamera, IProjector, IRenderer } from './interfaces'
+import { EngineModelController, type ModelConfig } from './engine-model-controller'
+import type { EngineModel } from './engine-model'
+
 
 
 export class Engine {
-    private renderer: IRenderer
+    private _models: Set<EngineModelController> = new Set()
 
-    constructor(renderer: IRenderer) {
-        this.renderer = renderer
+    constructor(
+        private renderer: IRenderer, 
+        private camera: ICamera, 
+        private projector: IProjector,
+    ) {}
+
+
+    addModel(model: EngineModel, config: ModelConfig) {
+        const controller = new EngineModelController(config)
+
+        this._models.add(controller)
+
+        this.renderer.addModelGeometry(
+            controller, structuredClone(model.geometry)
+        )
+        return controller
     }
 
-    private transformFlow: PolygonTransformer[] = []
-    private models: Map<number, ModelManager> = new Map()
 
+    removeModel(modelController: EngineModelController) {
+        this._models.delete(modelController)
 
-    addPolygonTransformer(transformer: PolygonTransformer) {
-        this.transformFlow.push(transformer)
-
-        return this
+        this.renderer.removeModelGeometry(modelController)
     }
 
-    addModel(model: ModelManager, id: number) {
-        this.models.set(id, model)
 
-        return this
-    }
-
-    removeModel(modelID: number) {
-        this.models.delete(modelID)
-    }
-
-    makeFrame() {
+    private render() {
         this.renderer.clearFrame()
-        
-        this.models.forEach(model => {            
-            model.getTransformedPolygonUnits().forEach(unit => {
-                for (const transformer of this.transformFlow) {
-                    if (!transformer.transformPolygon(unit)) return 
-                }
-                
-                this.renderer.addPolygon(unit)
-            })
-        })
 
-        this.renderer.flushFrame()
+        const vp = this.projector.getMatrix().multiplyBy(this.camera.getMatrix())
+        
+        this.renderer.render(vp)
+    }
+
+    loop(loopFn: () => void) {
+        const loop = () => {
+            loopFn()   
+            this.render()
+            requestAnimationFrame(loop)
+        }
+        
+        loop()
     }
 }

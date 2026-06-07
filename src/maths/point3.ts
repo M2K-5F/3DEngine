@@ -1,5 +1,4 @@
 import type { Matrix4 } from "./matrix4"
-import { ScreenPixel } from "./screen-pixel"
 import { Vector3 } from "./vector3"
 
 export class Point3 {
@@ -18,17 +17,7 @@ export class Point3 {
             0,
         )
     }
-
-    convertIntoPixel({width, height}: {width: number, height: number}): ScreenPixel {
-        const wDiv = Math.abs(this.w) < 0.0001 ? 1 : this.w
-        const x_ndc = this.x / wDiv
-        const y_ndc = this.y / wDiv
-        
-        return new ScreenPixel(
-            (x_ndc + 1) * 0.5 * width,
-            (1 - y_ndc) * 0.5 * height  // Y инвертирован
-        )
-    }
+    
 
     addVector(v: Vector3): Point3 {
         return new Point3(
