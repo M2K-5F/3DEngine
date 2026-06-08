@@ -7,11 +7,12 @@ import type { Matrix4 } from "../maths/matrix4"
 const VS_MAIN = `#version 300 es
 
 in vec3 aPoint;
+in vec3 aNormal;
 uniform mat4 uMatrix;
 out vec3 vNormal;
 
 void main() {
-    vNormal = aPoint;
+    vNormal = aNormal;
     gl_Position = uMatrix * vec4(aPoint, 1.0);
 }
 `
@@ -61,6 +62,7 @@ export class CanvasRenderer implements IRenderer {
     private program: WebGLProgram
 
     private aPoint: number
+    private aNormal: number
     private uMatrix: WebGLUniformLocation | null
     private uLightDir: WebGLUniformLocation | null
     private uColor: WebGLUniformLocation | null
@@ -79,6 +81,7 @@ export class CanvasRenderer implements IRenderer {
         this.uLightDir = this.gl.getUniformLocation(this.program, 'uLightDir')
         this.aPoint = this.gl.getAttribLocation(this.program, 'aPoint')
         this.uColor = this.gl.getUniformLocation(this.program, 'uColor')
+        this.aNormal = this.gl.getAttribLocation(this.program, "aNormal")
 
         this.gl.useProgram(this.program)
 
@@ -104,8 +107,13 @@ export class CanvasRenderer implements IRenderer {
 
         this.gl.bindVertexArray(vao)
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertices)
+            this.gl.vertexAttribPointer(this.aPoint, 3, this.gl.FLOAT, false, 24, 0)
             this.gl.enableVertexAttribArray(this.aPoint)
-            this.gl.vertexAttribPointer(this.aPoint, 3, this.gl.FLOAT, false, 0, 0)
+
+            this.gl.vertexAttribPointer(this.aNormal, 3, this.gl.FLOAT, false, 24, 12)
+            this.gl.enableVertexAttribArray(this.aNormal)
+
+
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indices)
 
         this.gl.bindVertexArray(null)

@@ -5,8 +5,8 @@ import { Engine } from './engine'
 import { KeyboardCameraController } from './controllers/keyboard-controller'
 import { MouseController } from './controllers/mouse-controller'
 import { Point3 } from './maths/point3'
-import { TigerTank } from './models/tiger-tank'
 import { Vector3 } from './maths/vector3'
+import { GeometryGenerator } from './models/generator'
 
 const WIDTH = 1400, HEIGHT = 800
 
@@ -24,20 +24,20 @@ const renderer = new CanvasRenderer({
 const engine = new Engine(renderer, camera, projector)
 
 
-
-const controller = engine.addModel(TigerTank, {
+engine.addModel(GeometryGenerator.createSphere(200), {
     position: new Point3(0, 0, 0),
     rotation: {x: 0, y: 0, z: 0},
     scale: new Vector3(1, 1, 1)
 })    
-let ratio = 0
+
+
+engine.addModel(GeometryGenerator.createPlane(100, 100), {
+    position: new Point3(0, -1, 0),
+    rotation: {x: 0, y: 0, z: 0},
+    scale: new Vector3(1, 1, 1)
+})    
+
 
 engine.loop(() => {
-    keyboardController.update()
-    
-    ratio = ratio += 0.04
-    const move = Math.sin(ratio)
-    
-    controller.setRotation({x: ratio, y: ratio, z: 0})
-    controller.updatePosition(new Point3(0, 0, move))
+    keyboardController.update()    
 })
