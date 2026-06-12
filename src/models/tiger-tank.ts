@@ -1,6 +1,5 @@
-import { Point3 } from "../maths/point3";
-import { Vector3 } from "../maths/vector3";
 import { EngineModel } from "../engine-model";
+
 
 export const TigerTank = EngineModel.fromOBJ(`
 # Blender v2.69 (sub 0) OBJ File: 'Tiger_I.blend'

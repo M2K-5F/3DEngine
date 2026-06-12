@@ -27,13 +27,15 @@ export class Camera implements ICamera {
         this.matrixNeedsUpdate = false
     }
 
+
     public getMatrix(): Matrix4 {
         if (this.matrixNeedsUpdate) this._updateViewMatrix()
 
         return this.viewMatrix
     }
 
-    rotate(deltaX: number, deltaY: number) {
+
+    public rotate(deltaX: number, deltaY: number) {
         this.rotation.horizontal += deltaX
         this.rotation.vertical += deltaY
         
@@ -58,7 +60,7 @@ export class Camera implements ICamera {
     }
 
 
-    move(moveVector: Vector3) {
+    public move(moveVector: Vector3) {
         const worldMoveVector = this.directions.right
             .multiplyScalar(moveVector.x)
             .add(
@@ -76,5 +78,5 @@ export class Camera implements ICamera {
     }
 
 
-    getPosition() { return this.position }
+    public getPosition() { return this.position }
 }

@@ -5,7 +5,6 @@ export class Vector3 {
         public x: number,
         public y: number,
         public z: number,
-        public w: number = 0,
     ) {}
 
     add(other: Vector3): Vector3 {
@@ -13,7 +12,6 @@ export class Vector3 {
             this.x + other.x,
             this.y + other.y,
             this.z + other.z,
-            this.w
         )
     }
 
@@ -22,7 +20,6 @@ export class Vector3 {
             this.x - other.x,
             this.y - other.y,
             this.z - other.z,
-            this.w
         )
     }
 
@@ -31,7 +28,6 @@ export class Vector3 {
             this.x * scalar,
             this.y * scalar,
             this.z * scalar,
-            this.w
         )
     }
 
@@ -42,7 +38,6 @@ export class Vector3 {
                 this.x / length,
                 this.y / length,
                 this.z / length,
-                this.w
             )
         }
         return this
@@ -53,7 +48,6 @@ export class Vector3 {
             this.y * other.z - this.z * other.y,
             this.z * other.x - this.x * other.z,
             this.x * other.y - this.y * other.x,
-            0
         )
     }
 

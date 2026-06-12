@@ -1,8 +1,7 @@
 import { EngineModel } from "../engine-model";
-import { Point3 } from "../maths/point3";
-import { Vector3 } from "../maths/vector3";
 
-export const GuyWithPipisi = () => EngineModel.fromOBJ(`
+
+export const GuyWithPipisi = EngineModel.fromOBJ(`
 # Exported from Nomad Sculpt
 o Object_133
 usemtl body

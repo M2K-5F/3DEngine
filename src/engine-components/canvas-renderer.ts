@@ -8,12 +8,13 @@ const VS_MAIN = `#version 300 es
 
 in vec3 aPoint;
 in vec3 aNormal;
-uniform mat4 uMatrix;
+uniform mat4 uVP;
+uniform mat4 uM;
 out vec3 vNormal;
 
 void main() {
-    vNormal = aNormal;
-    gl_Position = uMatrix * vec4(aPoint, 1.0);
+    vNormal = mat3(uM) * aNormal;
+    gl_Position = (uVP * uM) * vec4(aPoint, 1.0);
 }
 `
 
@@ -61,11 +62,22 @@ export class CanvasRenderer implements IRenderer {
     private gl: WebGL2RenderingContext
     private program: WebGLProgram
 
-    private aPoint: number
-    private aNormal: number
-    private uMatrix: WebGLUniformLocation | null
-    private uLightDir: WebGLUniformLocation | null
-    private uColor: WebGLUniformLocation | null
+    private attributes = {
+        point: -1,
+        normal: -1
+    }
+
+    private uniforms: {
+        vp: WebGLUniformLocation | null
+        m: WebGLUniformLocation | null
+        lightDir: WebGLUniformLocation | null
+        color: WebGLUniformLocation | null
+    } = {
+        vp: null,
+        m: null,
+        lightDir: null,
+        color: null
+    }
     
     constructor(config: RendererConfig) {
         const root = document.getElementById('root')!
@@ -77,15 +89,17 @@ export class CanvasRenderer implements IRenderer {
         this.gl = this.canvas.getContext('webgl2')!
 
         this.program = createProgram(this.gl)
-        this.uMatrix = this.gl.getUniformLocation(this.program, "uMatrix")
-        this.uLightDir = this.gl.getUniformLocation(this.program, 'uLightDir')
-        this.aPoint = this.gl.getAttribLocation(this.program, 'aPoint')
-        this.uColor = this.gl.getUniformLocation(this.program, 'uColor')
-        this.aNormal = this.gl.getAttribLocation(this.program, "aNormal")
+        this.uniforms.vp = this.gl.getUniformLocation(this.program, "uVP")
+        this.uniforms.m = this.gl.getUniformLocation(this.program, "uM")
+        this.uniforms.lightDir = this.gl.getUniformLocation(this.program, 'uLightDir')
+        this.uniforms.color = this.gl.getUniformLocation(this.program, 'uColor')
+
+        this.attributes.point = this.gl.getAttribLocation(this.program, 'aPoint')
+        this.attributes.normal = this.gl.getAttribLocation(this.program, "aNormal")
 
         this.gl.useProgram(this.program)
 
-        this.gl.uniform3f(this.uLightDir, 1, 1, 0)
+        this.gl.uniform3f(this.uniforms.lightDir, 1, 1, 0)
 
 
         this.gl.enable(this.gl.DEPTH_TEST)
@@ -94,7 +108,7 @@ export class CanvasRenderer implements IRenderer {
     }
 
 
-    addModelGeometry(controller: EngineModelController, cache: ModelCachedGeometry) {
+    public addModelGeometry(controller: EngineModelController, cache: ModelCachedGeometry) {
         const vertices = this.gl.createBuffer()
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertices)
         this.gl.bufferData(this.gl.ARRAY_BUFFER, cache.vertices, this.gl.STATIC_DRAW)
@@ -107,11 +121,11 @@ export class CanvasRenderer implements IRenderer {
 
         this.gl.bindVertexArray(vao)
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertices)
-            this.gl.vertexAttribPointer(this.aPoint, 3, this.gl.FLOAT, false, 24, 0)
-            this.gl.enableVertexAttribArray(this.aPoint)
+            this.gl.vertexAttribPointer(this.attributes.point, 3, this.gl.FLOAT, false, 24, 0)
+            this.gl.enableVertexAttribArray(this.attributes.point)
 
-            this.gl.vertexAttribPointer(this.aNormal, 3, this.gl.FLOAT, false, 24, 12)
-            this.gl.enableVertexAttribArray(this.aNormal)
+            this.gl.vertexAttribPointer(this.attributes.normal, 3, this.gl.FLOAT, false, 24, 12)
+            this.gl.enableVertexAttribArray(this.attributes.normal)
 
 
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indices)
@@ -127,7 +141,7 @@ export class CanvasRenderer implements IRenderer {
     }
 
 
-    removeModelGeometry(controller: EngineModelController) {
+    public removeModelGeometry(controller: EngineModelController) {
         const model = this.modelBuffers.get(controller)
 
         if (model) {
@@ -139,20 +153,21 @@ export class CanvasRenderer implements IRenderer {
     }
 
 
-    clearFrame() {
+    public clearFrame() {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
     }
 
 
-    render(vp: Matrix4) {
+    public render(vp: Matrix4) {
+        this.gl.uniformMatrix4fv(this.uniforms.vp, false, new Float32Array(vp.m))
+        
         this.modelBuffers.forEach((model, controller) => {
-            const mvp = vp.multiplyBy(controller.getMatrix())
-
             this.gl.bindVertexArray(model.vao)
 
-            this.gl.uniformMatrix4fv(this.uMatrix, false, new Float32Array(mvp.m))
+            this.gl.uniformMatrix4fv(this.uniforms.m, false, new Float32Array(controller.getMatrix().m))
 
-            this.gl.uniform3f(this.uColor, 100, 100, 1)
+            const color = controller.getColor()
+            this.gl.uniform3f(this.uniforms.color, color.x, color.y, color.z)
 
             this.gl.drawElements(this.gl.TRIANGLES, model.indicesCount, this.gl.UNSIGNED_SHORT, 0)
             

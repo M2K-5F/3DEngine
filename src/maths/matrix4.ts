@@ -17,16 +17,6 @@ export class Matrix4 {
     }
 
 
-    transformPoint(p: Point3): Point3 {
-        const x = this.m[0] * p.x + this.m[4] * p.y + this.m[8] * p.z + this.m[12] * p.w
-        const y = this.m[1] * p.x + this.m[5] * p.y + this.m[9] * p.z + this.m[13] * p.w
-        const z = this.m[2] * p.x + this.m[6] * p.y + this.m[10] * p.z + this.m[14] * p.w
-        const w = this.m[3] * p.x + this.m[7] * p.y + this.m[11] * p.z + this.m[15] * p.w
-        
-        return new Point3(x, y, z, w) 
-    }
-
-
     multiplyBy(other: Matrix4): Matrix4 {
         const a = this.m
         const b = other.m
@@ -55,6 +45,7 @@ export class Matrix4 {
     }
 }
 
+
 export class MatrixFabric {
     static getScaleMatrix(x: number, y: number, z: number): Matrix4 {
         return new Matrix4([
@@ -75,6 +66,7 @@ export class MatrixFabric {
         ])
     }
 
+    
     static getRotationYMatrix(angle: number): Matrix4 {
         const cos = Math.cos(angle)
         const sin = Math.sin(angle)

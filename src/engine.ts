@@ -14,19 +14,19 @@ export class Engine {
     ) {}
 
 
-    addModel(model: EngineModel, config: ModelConfig) {
+    public addModel(model: EngineModel, config: ModelConfig) {
         const controller = new EngineModelController(config)
 
         this._models.add(controller)
 
         this.renderer.addModelGeometry(
-            controller, structuredClone(model.geometry)
+            controller, model.geometry
         )
         return controller
     }
 
 
-    removeModel(modelController: EngineModelController) {
+    public removeModel(modelController: EngineModelController) {
         this._models.delete(modelController)
 
         this.renderer.removeModelGeometry(modelController)
@@ -41,7 +41,8 @@ export class Engine {
         this.renderer.render(vp)
     }
 
-    loop(loopFn: () => void) {
+
+    public loop(loopFn: () => void) {
         const loop = () => {
             loopFn()   
             this.render()

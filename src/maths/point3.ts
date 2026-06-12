@@ -6,7 +6,6 @@ export class Point3 {
         public x: number,
         public y: number,
         public z: number,
-        public w: number = 1,
     ) {}
 
     vectorTo(other: Point3): Vector3 {
@@ -14,7 +13,6 @@ export class Point3 {
             other.x - this.x,
             other.y - this.y,
             other.z - this.z,
-            0,
         )
     }
     
@@ -24,7 +22,6 @@ export class Point3 {
             this.x + v.x,
             this.y + v.y,
             this.z + v.z,
-            this.w
         )
     }
 
@@ -33,7 +30,6 @@ export class Point3 {
             this.x - other.x,
             this.y - other.y,
             this.z - other.z,
-            0
         )
     }
 
