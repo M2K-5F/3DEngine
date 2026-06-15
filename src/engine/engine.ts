@@ -33,7 +33,6 @@ export class Engine {
 
     public loop(loopFn: (dt: FrameTime) => void) {
         let last = Date.now()
-        const eng = this
 
         const loop = () => {
             const world = this._world
@@ -42,7 +41,7 @@ export class Engine {
                 const dt = (now - last) / 1000 as FrameTime
                 last = now 
 
-                eng._systems.forEach(sys => sys.update(dt, world))
+                this._systems.forEach(sys => sys.update(dt, world))
 
                 loopFn(dt)   
 
