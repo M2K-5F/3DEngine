@@ -1,7 +1,6 @@
-import { EngineModel } from "../engine-model";
+import { Mesh } from "../thing/thing-mesh";
 
-
-export const TigerTank = EngineModel.fromOBJ(`
+export const TigerTank = Mesh.fromOBJ(`
 # Blender v2.69 (sub 0) OBJ File: 'Tiger_I.blend'
 # www.blender.org
 mtllib Tiger_I.mtl

@@ -1,7 +1,7 @@
-import type { ICamera } from "../interfaces"
-import { Matrix4, MatrixFabric } from "../maths/matrix4"
-import { Point3 } from "../maths/point3"
-import { Vector3 } from "../maths/vector3"
+import type { ICamera } from "../../interfaces"
+import { Matrix4, MatrixFabric } from "../../maths/matrix4"
+import { Point3 } from "../../maths/point3"
+import { Vector3 } from "../../maths/vector3"
 
 export class Camera implements ICamera {
     private viewMatrix = new Matrix4()

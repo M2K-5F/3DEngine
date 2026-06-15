@@ -1,7 +1,7 @@
-import type { EngineModelController } from "./engine-model-controller"
 import type { Matrix4 } from "./maths/matrix4"
 import type { Point3 } from "./maths/point3"
 import type { Vector3 } from "./maths/vector3"
+import type { World } from "./world"
 
 
 export interface MatrixGenerator {
@@ -23,16 +23,18 @@ export interface IModelController extends MatrixGenerator {
 }
 
 
-export type ModelGeometry = {
-    vertices: Float32Array,
-    indices: Uint16Array
-}
-
-
 export interface IRenderer {
     clearFrame(): void
-    render(vp: Matrix4): void
-    addModelGeometry(controller: EngineModelController, geometry: ModelGeometry): void
-    removeModelGeometry(controller: EngineModelController): void
+    render(vp: Matrix4, world: World): void
 }
 
+
+export interface System {
+    update(dt: FrameTime, world: World): void
+}
+
+
+export type ValueOf<T> = {prototype: T}
+
+
+export type FrameTime = number & {__brand: "FrameTime"}

@@ -1,7 +1,6 @@
-import { EngineModel } from "../engine-model";
+import { Mesh } from "../thing/thing-mesh";
 
-
-export const GuyWithPipisi = EngineModel.fromOBJ(`
+export const GuyWithPipisi = Mesh.fromOBJ(`
 # Exported from Nomad Sculpt
 o Object_133
 usemtl body

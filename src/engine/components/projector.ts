@@ -1,5 +1,5 @@
-import type { IProjector } from "../interfaces"
-import { Matrix4, MatrixFabric } from "../maths/matrix4"
+import type { IProjector } from "../../interfaces"
+import { Matrix4, MatrixFabric } from "../../maths/matrix4"
 
 type ProjectorConfig = {
     aspect: number

@@ -1,6 +1,6 @@
-import type { ICamera } from "../interfaces"
+import type { FrameTime, ICamera, System } from "../interfaces"
 
-export class MouseController {
+export class MouseSystem implements System {
     private camera: ICamera
     private container: HTMLDivElement
     private mouseLocked: boolean = false
@@ -30,4 +30,6 @@ export class MouseController {
             }
         })
     }
+
+    update(dt: FrameTime): void {}
 }

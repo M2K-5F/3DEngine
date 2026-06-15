@@ -1,4 +1,4 @@
-import type { ICamera } from "../interfaces"
+import type { FrameTime, ICamera, System } from "../interfaces"
 import { Vector3 } from "../maths/vector3"
 
 type KeysState = {
@@ -12,7 +12,7 @@ type KeysState = {
 }
 
 
-export class KeyboardCameraController {
+export class KeyboardCameraSystem implements System {
     camera: ICamera
     keys: KeysState = {
         forward: false,
@@ -23,8 +23,8 @@ export class KeyboardCameraController {
         down: false,
         fast: false,
     }
-    private moveSpeed: number = 0.1
-    private fastMoveSpeed: number = 0.3
+    private moveSpeed: number = 10
+    private fastMoveSpeed: number = 30
 
 
     constructor(camera: ICamera) {
@@ -58,19 +58,19 @@ export class KeyboardCameraController {
         })
     }
 
-    update() {
+    update(dt: FrameTime) {
         const speed = this.keys.fast ? this.fastMoveSpeed : this.moveSpeed;
         
         let forward = 0
         let right = 0
         let up = 0
         
-        if (this.keys.forward) forward += speed
-        if (this.keys.backward) forward -= speed
-        if (this.keys.right) right -= speed
-        if (this.keys.left) right += speed
-        if (this.keys.up) up += speed
-        if (this.keys.down) up -= speed
+        if (this.keys.forward) forward += speed * dt
+        if (this.keys.backward) forward -= speed * dt
+        if (this.keys.right) right -= speed * dt
+        if (this.keys.left) right += speed * dt
+        if (this.keys.up) up += speed * dt
+        if (this.keys.down) up -= speed * dt
         
         if (forward !== 0 || right !== 0 || up !== 0) {
             this.camera.move(new Vector3(right, up, forward))
