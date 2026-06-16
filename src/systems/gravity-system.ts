@@ -27,7 +27,7 @@ export class GravitySystem implements System {
             
 
             if (raycastY <= this.groundLevel) {
-                if (posY <= this.groundLevel || Math.abs(velY) < 1) {
+                if (posY <= this.groundLevel || Math.abs(velY) < 3) {
                     transform.position.y = this.groundLevel
                     velocity.velocity.y = 0
                 }

@@ -7,13 +7,13 @@ export class Camera implements ICamera {
     private viewMatrix = new Matrix4()
     private matrixNeedsUpdate = true
     
-    private position = new Point3(0, 0, 1)
+    private position = new Point3(0, 0, 0)
     private directions = {
         up: new Vector3(0, 1, 0),
         forward: new Vector3(0, 0, 1),
         right: new Vector3(1, 0, 0),
     }
-    private target = new Point3(0, 0, 0)
+    private target = new Point3(0, 0, 1)
     private rotation = { horizontal: 0, vertical: 0 }
 
 

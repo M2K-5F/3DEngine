@@ -1,4 +1,4 @@
-import { Mesh } from "../thing/thing-mesh";
+import { Mesh } from "../shared/mesh";
 
 export const TigerTank = Mesh.fromOBJ(`
 # Blender v2.69 (sub 0) OBJ File: 'Tiger_I.blend'

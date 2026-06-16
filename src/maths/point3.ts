@@ -25,15 +25,11 @@ export class Point3 {
         )
     }
 
-    subtract(other: Point3): Vector3 {
-        return new Vector3(
+    subtract(other: Vector3) {
+        return new Point3(
             this.x - other.x,
             this.y - other.y,
             this.z - other.z,
         )
-    }
-
-    transformByMatrix(matrix: Matrix4) {
-        return matrix.transformPoint(this)
     }
 }

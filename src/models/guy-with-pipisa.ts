@@ -1,4 +1,4 @@
-import { Mesh } from "../thing/thing-mesh";
+import { Mesh } from "../shared/mesh";
 
 export const GuyWithPipisi = Mesh.fromOBJ(`
 # Exported from Nomad Sculpt

@@ -135,10 +135,13 @@ export class CanvasRenderer implements IRenderer {
             const bufferCache = this._getMeshBufferCache(mesh.mesh)
 
             this.gl.bindVertexArray(bufferCache.vao)
+            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, bufferCache.indices)
+
 
             this.gl.uniformMatrix4fv(this.uniforms.m, false, new Float32Array(m.m))
 
             this.gl.uniform3f(this.uniforms.color, mesh.color.x, mesh.color.y, mesh.color.z)
+            
 
             this.gl.drawElements(this.gl.TRIANGLES, bufferCache.indicesCount, this.gl.UNSIGNED_SHORT, 0)
 
@@ -158,6 +161,7 @@ export class CanvasRenderer implements IRenderer {
         this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indices)
         this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, mesh.indices, this.gl.STATIC_DRAW)
         
+        
         const vao = this.gl.createVertexArray()
 
         this.gl.bindVertexArray(vao)
@@ -170,8 +174,6 @@ export class CanvasRenderer implements IRenderer {
 
 
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indices)
-
-        this.gl.bindVertexArray(null)
 
         const bufferCache: BufferCache = {
             vao,

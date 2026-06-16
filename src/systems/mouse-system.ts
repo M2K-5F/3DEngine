@@ -22,10 +22,11 @@ export class MouseSystem implements System {
         })
         
         document.addEventListener('mousemove', (e) => {
+
             if (this.mouseLocked) {
                 this.camera.rotate(
                     - e.movementX * this.sensitivity,
-                    - e.movementY * this.sensitivity
+                    e.movementY * this.sensitivity
                 )
             }
         })

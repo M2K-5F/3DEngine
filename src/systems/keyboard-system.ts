@@ -65,10 +65,10 @@ export class KeyboardCameraSystem implements System {
         let right = 0
         let up = 0
         
-        if (this.keys.forward) forward += speed * dt
-        if (this.keys.backward) forward -= speed * dt
-        if (this.keys.right) right -= speed * dt
-        if (this.keys.left) right += speed * dt
+        if (this.keys.forward) forward -= speed * dt
+        if (this.keys.backward) forward += speed * dt
+        if (this.keys.right) right += speed * dt
+        if (this.keys.left) right -= speed * dt
         if (this.keys.up) up += speed * dt
         if (this.keys.down) up -= speed * dt
         

@@ -54,4 +54,8 @@ export class Vector3 {
     dot(other: Vector3 | Point3): number {
         return this.x * other.x + this.y * other.y + this.z * other.z
     }
+
+    get length() {
+        return Math.sqrt(this.x ** 2 + this.y ** 2 + this.z ** 2)
+    }
 }
