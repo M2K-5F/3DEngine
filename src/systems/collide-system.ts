@@ -5,7 +5,7 @@ import { ThingMass } from "../thing/components/mass";
 import { ThingTransform } from "../thing/components/transform";
 import { ThingVelocity } from "../thing/components/velocity";
 import { Thing } from "../thing/thing";
-import type { World } from "../world";
+import type { World } from "../world/world";
 
 type CollisionManifold = {
     penetration: number
@@ -14,7 +14,7 @@ type CollisionManifold = {
 
 export class CollideSystem implements System {
     update(_: FrameTime, world: World): void {
-        const things = world.query(ThingMass, ThingCollider, ThingTransform, ThingVelocity)
+        const things = world.entities.query(ThingMass, ThingCollider, ThingTransform, ThingVelocity)
         
 
         for (let i = 0; i < things.length; i++) {

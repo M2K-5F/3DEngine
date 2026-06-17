@@ -3,8 +3,7 @@ import { ThingCollider } from "../thing/components/collider"
 import { ThingMass } from "../thing/components/mass"
 import { ThingTransform } from "../thing/components/transform"
 import { ThingVelocity } from "../thing/components/velocity"
-import { Thing } from "../thing/thing"
-import type { World } from "../world"
+import type { World } from "../world/world"
 
 
 export class GravitySystem implements System {
@@ -15,7 +14,7 @@ export class GravitySystem implements System {
 
 
     update(dt: FrameTime, world: World) {
-        const things = world.query(ThingTransform, ThingVelocity, ThingMass, ThingCollider)
+        const things = world.entities.query(ThingTransform, ThingVelocity, ThingMass, ThingCollider)
 
         things.forEach(thing => {
             const transform = thing.getComponent(ThingTransform)!

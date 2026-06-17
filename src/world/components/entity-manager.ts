@@ -1,10 +1,10 @@
-import { Thing, type ComponentClass } from "./thing/thing";
+import { Thing, type ComponentClass } from "../../thing/thing"
 
-export class World {
+export class EntityManager {
     private entities: Thing[] = []
 
-    public createThing(id: number): Thing {
-        const entity = new Thing(id)
+    public create(): Thing {
+        const entity = new Thing(this.entities.length)
         this.entities.push(entity)
         return entity
     }

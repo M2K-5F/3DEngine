@@ -1,5 +1,4 @@
 import { MatrixFabric } from "../../maths/matrix4"
-import type { World } from "../../world"
 import { ThingTransform } from "../../thing/components/transform"
 import { ThingMesh } from "../../thing/components/mesh"
 import type { Mesh } from "../../shared/mesh"
@@ -7,12 +6,15 @@ import type { Camera } from "./camera"
 import type { Projector } from "./projector"
 import type { Point3 } from "../../maths/point3"
 import type { Vector3 } from "../../maths/vector3"
-import FS_MAIN from "../shaders/gensh.frag?raw"
+import FS_MAIN from "../shaders/benzin.frag?raw"
 import VS_MAIN from "../shaders/main.vert?raw"
+import { Colors } from "../../shared/color-constants"
+import type { World } from "../../world/world"
 
 export type RendererConfig = {
     width: number
-    height: number    
+    height: number
+    fallbackTextureColor: Vector3
 }
 
 
@@ -31,6 +33,7 @@ export class Renderer  {
     private canvas: HTMLCanvasElement
     private gl: WebGL2RenderingContext
     private program: WebGLProgram
+    private fallbackTexture: WebGLTexture
 
     private attributes = {
         point: -1,
@@ -75,6 +78,8 @@ export class Renderer  {
         this.attributes.normal = this.gl.getAttribLocation(this.program, "aNormal")
         this.attributes.uv = this.gl.getAttribLocation(this.program, 'aUV')
 
+        this.fallbackTexture = createFallbackTexture(this.gl, config.fallbackTextureColor.multiplyScalar(255))
+
         this.gl.useProgram(this.program)
 
         this.gl.uniform3f(this.uniforms.lightDir, 1, 1, 0)
@@ -112,7 +117,7 @@ export class Renderer  {
         this.gl.uniformMatrix4fv(this.uniforms.vp, false, new Float32Array(vp.m))
         this.gl.uniform3f(this.uniforms.position, camera.position.x, camera.position.y, camera.position.z)
 
-        const things = world.query(ThingTransform, ThingMesh)
+        const things = world.entities.query(ThingTransform, ThingMesh)
 
         things.forEach(thing => {
             const transform = thing.getComponent(ThingTransform)!
@@ -128,15 +133,13 @@ export class Renderer  {
 
             this.gl.uniformMatrix4fv(this.uniforms.m, false, new Float32Array(m.m))
 
-            if (mesh.texture) {
-                const texture = this._loadTexture(mesh.texture)
+            const texture = mesh.texture ? this._loadTexture(mesh.texture) : this.fallbackTexture
+            
+            this.gl.activeTexture(this.gl.TEXTURE0)
+            this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
 
-                this.gl.activeTexture(this.gl.TEXTURE0)
-                this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
-
-                const texUniform = this.gl.getUniformLocation(this.program, "uTexture")
-                this.gl.uniform1i(texUniform, 0)
-            }            
+            const texUniform = this.gl.getUniformLocation(this.program, "uTexture")
+            this.gl.uniform1i(texUniform, 0)
 
             this.gl.drawElements(this.gl.TRIANGLES, bufferCache.indicesCount, this.gl.UNSIGNED_SHORT, 0)
         })
@@ -189,10 +192,7 @@ export class Renderer  {
             return this._textureCache.get(url)!
         }
 
-        const texture = this.gl.createTexture()
-        this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
-        this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true); 
-        this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]))
+        const texture = createFallbackTexture(this.gl, Colors.BLACK)
 
         const image = new Image()
         image.src = url
@@ -277,4 +277,15 @@ function createViewMatrix(position: Point3, target: Point3, up: Vector3) {
 
 function createProjectionMatrix(fov: number, aspect: number, far: number, near: number) {
     return MatrixFabric.getProjectionMatrix({fov, aspect, far, near})
+}
+
+
+function createFallbackTexture(gl: WebGL2RenderingContext, textureColor: Vector3) {
+    const texture = gl.createTexture()
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); 
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([textureColor.x, textureColor.y, textureColor.z, 255]))
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    return texture
 }

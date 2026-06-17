@@ -169,6 +169,8 @@ export class Mesh {
         for (let i = 0; i < rawVerts.length / 3; i++) {
             verts.push(rawVerts[i*3], rawVerts[i*3+1], rawVerts[i*3+2])
             verts.push(normals[i*3], normals[i*3+1], normals[i*3+2])
+            // Добавляем пустые UV координаты (U, V)
+            verts.push(0.0, 0.0) 
         }
 
         const idx: number[] = []
@@ -180,18 +182,21 @@ export class Mesh {
         return new Mesh(new Float32Array(verts), new Uint16Array(idx))
     }
 
+
     static createPlane(width: number = 1, height: number = 1) {
         const w = width / 2
         const h = height / 2
         const verts = new Float32Array([
-            -w, 0,  h,   0, 1, 0,
-            w, 0,  h,   0, 1, 0,
-            w, 0, -h,   0, 1, 0,
-            -w, 0, -h,   0, 1, 0
+            // Pos: X, Y, Z    Normal: NX, NY, NZ   UV: U, V
+            -w, 0,  h,         0, 1, 0,             0.0, 0.0,
+            w, 0,  h,         0, 1, 0,             0.0, 0.0,
+            w, 0, -h,         0, 1, 0,             0.0, 0.0,
+            -w, 0, -h,         0, 1, 0,             0.0, 0.0
         ])
         const idx = new Uint16Array([0, 1, 2, 0, 2, 3])
-        return new Mesh(new Float32Array(verts), new Uint16Array(idx))
+        return new Mesh(verts, new Uint16Array(idx))
     }
+
 
     static createSphere(subdivisions: number = 24, radius: number = 1) {
         const verts: number[] = []
@@ -208,7 +213,8 @@ export class Mesh {
                 const ny = cosTheta
                 const nz = -Math.sin(phi) * sinTheta
 
-                verts.push(nx * radius, ny * radius, nz * radius, nx, ny, nz)
+                // Пушим позицию, нормаль и пустые UV
+                verts.push(nx * radius, ny * radius, nz * radius, nx, ny, nz, 0.0, 0.0)
             }
         }
 
@@ -230,6 +236,7 @@ export class Mesh {
         return new Mesh(new Float32Array(verts), new Uint16Array(idx))
     }
 
+
     static createCylinder(segments: number = 16, radius: number = 0.5, height: number = 1) {
         const verts: number[] = []
         const idx: number[] = []
@@ -240,8 +247,8 @@ export class Mesh {
             const x = Math.cos(angle)
             const z = -Math.sin(angle)
 
-            verts.push(x * radius,  h, z * radius,   x, 0, z)
-            verts.push(x * radius, -h, z * radius,   x, 0, z)
+            verts.push(x * radius,  h, z * radius,   x, 0, z,   0.0, 0.0)
+            verts.push(x * radius, -h, z * radius,   x, 0, z,   0.0, 0.0)
         }
 
         for (let i = 0; i < segments; i++) {
@@ -250,21 +257,21 @@ export class Mesh {
             idx.push(first + 1, first + 3, first + 2)
         }
 
-        const topCenterIdx = verts.length / 6
-        verts.push(0, h, 0,  0, 1, 0)
+        const topCenterIdx = verts.length / 8
+        verts.push(0, h, 0,  0, 1, 0,  0.0, 0.0)
 
         for (let i = 0; i <= segments; i++) {
             const angle = (i * 2 * Math.PI) / segments
-            verts.push(Math.cos(angle) * radius, h, -Math.sin(angle) * radius,  0, 1, 0)
+            verts.push(Math.cos(angle) * radius, h, -Math.sin(angle) * radius,  0, 1, 0,  0.0, 0.0)
             if (i > 0) idx.push(topCenterIdx, topCenterIdx + i, topCenterIdx + i + 1)
         }
 
-        const bottomCenterIdx = verts.length / 6
-        verts.push(0, -h, 0,  0, -1, 0)
+        const bottomCenterIdx = verts.length / 8
+        verts.push(0, -h, 0,  0, -1, 0,  0.0, 0.0)
 
         for (let i = 0; i <= segments; i++) {
             const angle = (i * 2 * Math.PI) / segments
-            verts.push(Math.cos(angle) * radius, -h, -Math.sin(angle) * radius,  0, -1, 0)
+            verts.push(Math.cos(angle) * radius, -h, -Math.sin(angle) * radius,  0, -1, 0,  0.0, 0.0)
             if (i > 0) idx.push(bottomCenterIdx, bottomCenterIdx + i + 1, bottomCenterIdx + i)
         }
 

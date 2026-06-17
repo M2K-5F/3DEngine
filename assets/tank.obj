@@ -1,6 +1,3 @@
-import { Mesh } from "../shared/mesh";
-
-export const TigerTank = Mesh.fromOBJ(`
 # Blender v2.69 (sub 0) OBJ File: 'Tiger_I.blend'
 # www.blender.org
 mtllib Tiger_I.mtl
@@ -25585,4 +25582,3 @@ f 11206/5283 11210/5285 11207/5284
 f 11210/5285 11208/5287 11207/5284
 f 11292/5364 11293/5363 11290/5362
 f 11293/5363 11289/5361 11290/5362
-`)

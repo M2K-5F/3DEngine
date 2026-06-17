@@ -1,56 +1,32 @@
-import type { FrameTime, System } from '../interfaces'
-import type { World } from '../world'
-import type { Camera } from './components/camera'
+import type { FrameTime } from '../interfaces'
+import type { World } from '../world/world'
 import type { Projector } from './components/projector'
 import type { Renderer } from './components/renderer'
 
 
 
-export class Engine {
-    private _systems: Set<System> = new Set()
+export class BlazingEngine {
     private _world?: World
 
     constructor(
-        private renderer: Renderer, 
-        private camera: Camera, 
+        private renderer: Renderer,
         private projector: Projector,
     ) {}
-
-    addSystems(...systems: System[]) {
-        systems.forEach(system => {
-            this._systems.add(system)
-        })
-    }
-
-    removeSystems(...systems: System[]) {
-        systems.forEach(system => {
-            this._systems.delete(system)
-        })
-    }
-
 
     bindWorld(world: World) {
         this._world = world
     }
 
-
-    public loop(loopFn: (dt: FrameTime) => void) {
-        let last = Date.now()
-
+    public loop(loopFn?: (dt: FrameTime) => void) {
         const loop = () => {
             const world = this._world
             if (world) {
-                const now = Date.now()
-                const dt = (now - last) / 1000 as FrameTime
-                last = now 
+                const dt = world.update()
 
-                this._systems.forEach(sys => sys.update(dt, world))
-
-                loopFn(dt)   
+                loopFn?.(dt)   
 
                 this.renderer.clearFrame()
-
-                this.renderer.render(this.camera, this.projector, world)
+                this.renderer.render(world.camera.getCamera(), this.projector, world)
             }
 
             requestAnimationFrame(loop)
