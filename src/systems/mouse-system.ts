@@ -1,12 +1,13 @@
-import type { FrameTime, ICamera, System } from "../interfaces"
+import type { Camera } from "../engine/components/camera"
+import type { FrameTime, System } from "../interfaces"
 
 export class MouseSystem implements System {
-    private camera: ICamera
+    private camera: Camera
     private container: HTMLDivElement
     private mouseLocked: boolean = false
     private sensitivity: number = 0.002
     
-    constructor(camera: ICamera) {
+    constructor(camera: Camera) {
         this.camera = camera
         this.container = document.getElementById('root') as HTMLDivElement
         this.setupMouse()

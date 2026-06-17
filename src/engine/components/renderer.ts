@@ -1,41 +1,14 @@
-import type { IRenderer } from "../../interfaces"
-import { MatrixFabric, type Matrix4 } from "../../maths/matrix4"
+import { MatrixFabric } from "../../maths/matrix4"
 import type { World } from "../../world"
 import { ThingTransform } from "../../thing/components/transform"
 import { ThingMesh } from "../../thing/components/mesh"
 import type { Mesh } from "../../shared/mesh"
-
-
-const VS_MAIN = `#version 300 es
-
-in vec3 aPoint;
-in vec3 aNormal;
-uniform mat4 uVP;
-uniform mat4 uM;
-out vec3 vNormal;
-
-void main() {
-    vNormal = mat3(uM) * aNormal;
-    gl_Position = (uVP * uM) * vec4(aPoint, 1.0);
-}
-`
-
-const FS_MAIN = `#version 300 es
-
-precision highp float;
-uniform vec3 uColor;
-uniform vec3 uLightDir;
-in vec3 vNormal;
-out vec4 outColor;
-
-void main() {
-    float intensity = dot(normalize(vNormal), normalize(uLightDir));
-    intensity = max(0.1, intensity);
-    
-    outColor = vec4(uColor * intensity, 1.0);
-}
-`
-
+import type { Camera } from "./camera"
+import type { Projector } from "./projector"
+import type { Point3 } from "../../maths/point3"
+import type { Vector3 } from "../../maths/vector3"
+import FS_MAIN from "../shaders/gensh.frag?raw"
+import VS_MAIN from "../shaders/main.vert?raw"
 
 export type RendererConfig = {
     width: number
@@ -51,8 +24,9 @@ type BufferCache = {
 }
 
 
-export class CanvasRenderer implements IRenderer {
+export class Renderer  {
     private _meshBufferCache: Map<Mesh, BufferCache> = new Map()
+    private _textureCache: Map<string, WebGLTexture> = new Map()
 
     private canvas: HTMLCanvasElement
     private gl: WebGL2RenderingContext
@@ -60,7 +34,8 @@ export class CanvasRenderer implements IRenderer {
 
     private attributes = {
         point: -1,
-        normal: -1
+        normal: -1,
+        uv: -1
     }
 
     private uniforms: {
@@ -68,11 +43,15 @@ export class CanvasRenderer implements IRenderer {
         m: WebGLUniformLocation | null
         lightDir: WebGLUniformLocation | null
         color: WebGLUniformLocation | null
+        texture: WebGLUniformLocation | null
+        position: WebGLUniformLocation | null
     } = {
         vp: null,
         m: null,
         lightDir: null,
-        color: null
+        color: null,
+        texture: null,
+        position: null
     }
     
     constructor(config: RendererConfig) {
@@ -87,11 +66,14 @@ export class CanvasRenderer implements IRenderer {
         this.program = createProgram(this.gl)
         this.uniforms.vp = this.gl.getUniformLocation(this.program, "uVP")
         this.uniforms.m = this.gl.getUniformLocation(this.program, "uM")
+        this.uniforms.texture = this.gl.getUniformLocation(this.program, "uTexture")
         this.uniforms.lightDir = this.gl.getUniformLocation(this.program, 'uLightDir')
         this.uniforms.color = this.gl.getUniformLocation(this.program, 'uColor')
+        this.uniforms.position = this.gl.getUniformLocation(this.program, "uPosition")
 
         this.attributes.point = this.gl.getAttribLocation(this.program, 'aPoint')
         this.attributes.normal = this.gl.getAttribLocation(this.program, "aNormal")
+        this.attributes.uv = this.gl.getAttribLocation(this.program, 'aUV')
 
         this.gl.useProgram(this.program)
 
@@ -121,8 +103,14 @@ export class CanvasRenderer implements IRenderer {
     }
 
 
-    public render(vp: Matrix4, world: World) {
+    public render(camera: Camera, projector: Projector, world: World) {
+
+        const {far, fov, near, aspect} = projector.config
+        const v = createViewMatrix(camera.position, camera.target, camera.directions.up)
+        const p = createProjectionMatrix(fov, aspect, far, near)
+        const vp = p.multiplyBy(v)
         this.gl.uniformMatrix4fv(this.uniforms.vp, false, new Float32Array(vp.m))
+        this.gl.uniform3f(this.uniforms.position, camera.position.x, camera.position.y, camera.position.z)
 
         const things = world.query(ThingTransform, ThingMesh)
 
@@ -140,11 +128,17 @@ export class CanvasRenderer implements IRenderer {
 
             this.gl.uniformMatrix4fv(this.uniforms.m, false, new Float32Array(m.m))
 
-            this.gl.uniform3f(this.uniforms.color, mesh.color.x, mesh.color.y, mesh.color.z)
-            
+            if (mesh.texture) {
+                const texture = this._loadTexture(mesh.texture)
+
+                this.gl.activeTexture(this.gl.TEXTURE0)
+                this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
+
+                const texUniform = this.gl.getUniformLocation(this.program, "uTexture")
+                this.gl.uniform1i(texUniform, 0)
+            }            
 
             this.gl.drawElements(this.gl.TRIANGLES, bufferCache.indicesCount, this.gl.UNSIGNED_SHORT, 0)
-
         })
     }
 
@@ -159,18 +153,20 @@ export class CanvasRenderer implements IRenderer {
 
         const indices = this.gl.createBuffer()
         this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indices)
-        this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, mesh.indices, this.gl.STATIC_DRAW)
-        
+        this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, mesh.indices, this.gl.STATIC_DRAW)        
         
         const vao = this.gl.createVertexArray()
 
         this.gl.bindVertexArray(vao)
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertices)
-            this.gl.vertexAttribPointer(this.attributes.point, 3, this.gl.FLOAT, false, 24, 0)
+            this.gl.vertexAttribPointer(this.attributes.point, 3, this.gl.FLOAT, false, 32, 0)
             this.gl.enableVertexAttribArray(this.attributes.point)
 
-            this.gl.vertexAttribPointer(this.attributes.normal, 3, this.gl.FLOAT, false, 24, 12)
+            this.gl.vertexAttribPointer(this.attributes.normal, 3, this.gl.FLOAT, false, 32, 12)
             this.gl.enableVertexAttribArray(this.attributes.normal)
+
+            this.gl.vertexAttribPointer(this.attributes.uv, 2, this.gl.FLOAT, false, 32, 24)
+            this.gl.enableVertexAttribArray(this.attributes.uv)
 
 
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indices)
@@ -185,6 +181,32 @@ export class CanvasRenderer implements IRenderer {
         this._meshBufferCache.set(mesh, bufferCache)
 
         return bufferCache
+    }
+
+
+    private _loadTexture(url: string): WebGLTexture {
+        if (this._textureCache.has(url)) {
+            return this._textureCache.get(url)!
+        }
+
+        const texture = this.gl.createTexture()
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
+        this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true); 
+        this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]))
+
+        const image = new Image()
+        image.src = url
+        image.onload = () => {
+            this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, image)
+            
+            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR_MIPMAP_LINEAR)
+            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR)
+            this.gl.generateMipmap(this.gl.TEXTURE_2D)
+        }
+
+        this._textureCache.set(url, texture)
+        return texture
     }
 }
 
@@ -242,4 +264,17 @@ function createModelMatrix(transform: ThingTransform) {
     return matrix.multiplyBy(
         MatrixFabric.getScaleMatrix(1, 1, 1)
     )
+}
+
+function createViewMatrix(position: Point3, target: Point3, up: Vector3) {
+    return MatrixFabric.getLookAtMatrix(
+            position, 
+            target, 
+            up
+        )
+}
+
+
+function createProjectionMatrix(fov: number, aspect: number, far: number, near: number) {
+    return MatrixFabric.getProjectionMatrix({fov, aspect, far, near})
 }

@@ -13,7 +13,7 @@ type CollisionManifold = {
 }
 
 export class CollideSystem implements System {
-    update(dt: FrameTime, world: World): void {
+    update(_: FrameTime, world: World): void {
         const things = world.query(ThingMass, ThingCollider, ThingTransform, ThingVelocity)
         
 
@@ -64,35 +64,30 @@ export class CollideSystem implements System {
         const transB = b.getComponent(ThingTransform)!
         const velA = a.getComponent(ThingVelocity)!
         const velB = b.getComponent(ThingVelocity)!
-        const massA = a.getComponent(ThingMass)!.mass
-        const massB = b.getComponent(ThingMass)!.mass
+        const massA = a.getComponent(ThingMass)!
+        const massB = b.getComponent(ThingMass)!
 
         const { normal, penetration } = manifold;
 
-        const totalMass = massA + massB;
-        
-        if (totalMass > 0) {
-            const mRatioA = massB / totalMass;
-            const mRatioB = massA / totalMass;
+        const invMassA = massA.mass === Infinity ? 0 : 1 / massA.mass
+        const invMassB = massB.mass === Infinity ? 0 : 1 / massB.mass
+        const invMassSum = invMassA + invMassB;
 
-            transA.position = transA.position.subtract(normal.multiplyScalar(penetration * mRatioA))
-            transB.position = transB.position.addVector(normal.multiplyScalar(penetration * mRatioB))
+        if (invMassSum > 0) {
+            transA.position = transA.position.subtract(normal.multiplyScalar(penetration * (invMassA / invMassSum)))
+            transB.position = transB.position.addVector(normal.multiplyScalar(penetration * (invMassB / invMassSum)))
         }
 
         const relativeVelocity = velB.velocity.subtract(velA.velocity)
         const velAlongNormal = relativeVelocity.dot(normal)
 
-        if (velAlongNormal < 0) {
-            const restitution = 0.8
-            
-            let impulseMagnitude = -(1 + restitution) * velAlongNormal;
-            
-            const invMassA = massA === Infinity ? 0 : 1 / massA;
-            const invMassB = massB === Infinity ? 0 : 1 / massB;
-            const invMassSum = invMassA + invMassB;
+        if (velAlongNormal < 0) {            
+            const combinedRestitution = massA.restitution * massB.restitution;
 
+            let impulseMagnitude = -(1 + combinedRestitution) * velAlongNormal
+            
             if (invMassSum > 0) {
-                impulseMagnitude /= invMassSum;
+                impulseMagnitude /= invMassSum
 
                 const impulseVector = normal.multiplyScalar(impulseMagnitude)
             

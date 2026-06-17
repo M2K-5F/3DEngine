@@ -1,5 +1,8 @@
-import type { FrameTime, ICamera, IProjector, IRenderer, System } from '../interfaces'
+import type { FrameTime, System } from '../interfaces'
 import type { World } from '../world'
+import type { Camera } from './components/camera'
+import type { Projector } from './components/projector'
+import type { Renderer } from './components/renderer'
 
 
 
@@ -8,9 +11,9 @@ export class Engine {
     private _world?: World
 
     constructor(
-        private renderer: IRenderer, 
-        private camera: ICamera, 
-        private projector: IProjector,
+        private renderer: Renderer, 
+        private camera: Camera, 
+        private projector: Projector,
     ) {}
 
     addSystems(...systems: System[]) {
@@ -47,9 +50,7 @@ export class Engine {
 
                 this.renderer.clearFrame()
 
-                const vp = this.projector.getMatrix().multiplyBy(this.camera.getMatrix())
-                
-                this.renderer.render(vp, world)
+                this.renderer.render(this.camera, this.projector, world)
             }
 
             requestAnimationFrame(loop)

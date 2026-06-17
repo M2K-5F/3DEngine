@@ -5,6 +5,6 @@ import { Component } from "../thing";
 export class ThingMesh extends Component {
     constructor(
         public mesh: Mesh,
-        public color: Vector3
+        public texture?: string
     ) { super() }
 }

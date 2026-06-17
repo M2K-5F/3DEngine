@@ -1,4 +1,5 @@
-import type { FrameTime, ICamera, System } from "../interfaces"
+import type { Camera } from "../engine/components/camera"
+import type { FrameTime, System } from "../interfaces"
 import { Vector3 } from "../maths/vector3"
 
 type KeysState = {
@@ -13,7 +14,7 @@ type KeysState = {
 
 
 export class KeyboardCameraSystem implements System {
-    camera: ICamera
+    camera: Camera
     keys: KeysState = {
         forward: false,
         backward: false,
@@ -27,7 +28,7 @@ export class KeyboardCameraSystem implements System {
     private fastMoveSpeed: number = 30
 
 
-    constructor(camera: ICamera) {
+    constructor(camera: Camera) {
         this.camera = camera
         this.setupKeyboard()
     }
