@@ -67,11 +67,11 @@ export class CollideSystem implements System {
         const massA = a.getComponent(ThingMass)!
         const massB = b.getComponent(ThingMass)!
 
-        const { normal, penetration } = manifold;
+        const { normal, penetration } = manifold
 
         const invMassA = massA.mass === Infinity ? 0 : 1 / massA.mass
         const invMassB = massB.mass === Infinity ? 0 : 1 / massB.mass
-        const invMassSum = invMassA + invMassB;
+        const invMassSum = invMassA + invMassB
 
         if (invMassSum > 0) {
             transA.position = transA.position.subtract(normal.multiplyScalar(penetration * (invMassA / invMassSum)))

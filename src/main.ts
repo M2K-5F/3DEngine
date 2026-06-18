@@ -19,12 +19,13 @@ import { World } from './world/world'
 import { KeyboardCameraSystem } from './systems/keyboard-system'
 import { KeyboardTransformSystem, KeyboardTransformTag } from './systems/thing-keyboard-transform-system.ts.'
 import { Thing } from './thing/thing'
+import { Material } from './shared/material'
 
 function initEngine() {
     const WIDTH = 1400, HEIGHT = 800
 
     const projector = new Projector({ fov: Math.PI/2, aspect: WIDTH/HEIGHT, near: 0.1, far: 100 })
-    const renderer = new Renderer({height: HEIGHT, width: WIDTH, fallbackTextureColor: Colors.GRAY})   
+    const renderer = new Renderer({height: HEIGHT, width: WIDTH, fallbackTextureColor: Colors.PURPLE})   
     const engine = new BlazingEngine(renderer, projector)
     return engine
 }
@@ -49,10 +50,12 @@ function initWorld() {
 
 async function loadModel(world: World) {
     const skullMesh = await Mesh.fromOBJ('./assets/skull/Skull.obj')
+    const skullMaterial = await Material.from('./assets/skull/Skull.jpg')
+    const zelaMaterial = await Material.from('./assets/zela.jpg')
 
     world.entities.create()
         .addComponent(new ThingTransform(new Point3(20, 9, -35), new Vector3(1.5, 1.5, 0)))
-        .addComponent(new ThingMesh(skullMesh, './assets/skull/Skull.jpg'))
+        .addComponent(new ThingMesh(skullMesh, skullMaterial))
         .addComponent(new ThingVelocity(new Vector3(0, 0, 0)))
         .addComponent(new ThingCollider({type: "sphere", radius: 17}))
         .addComponent(new ThingMass(10, 0.5))
@@ -98,7 +101,7 @@ async function loadModel(world: World) {
     
     world.entities.create()
         .addComponent(new ThingTransform(new Point3(0, -2 ,0), new Vector3(0, 0, 0)))
-        .addComponent(new ThingMesh(Mesh.createPlane(100, 100)))
+        .addComponent(new ThingMesh(Mesh.createPlane(100, 100), zelaMaterial))
 }
 
 async function main() {

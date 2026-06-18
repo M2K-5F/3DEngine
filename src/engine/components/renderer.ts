@@ -10,6 +10,7 @@ import FS_MAIN from "../shaders/benzin.frag?raw"
 import VS_MAIN from "../shaders/main.vert?raw"
 import { Colors } from "../../shared/color-constants"
 import type { World } from "../../world/world"
+import type { Material } from "../../shared/material"
 
 export type RendererConfig = {
     width: number
@@ -28,7 +29,7 @@ type BufferCache = {
 
 export class Renderer  {
     private _meshBufferCache: Map<Mesh, BufferCache> = new Map()
-    private _textureCache: Map<string, WebGLTexture> = new Map()
+    private _textureCache: Map<Material, WebGLTexture> = new Map()
 
     private canvas: HTMLCanvasElement
     private gl: WebGL2RenderingContext
@@ -109,7 +110,6 @@ export class Renderer  {
 
 
     public render(camera: Camera, projector: Projector, world: World) {
-
         const {far, fov, near, aspect} = projector.config
         const v = createViewMatrix(camera.position, camera.target, camera.directions.up)
         const p = createProjectionMatrix(fov, aspect, far, near)
@@ -129,11 +129,9 @@ export class Renderer  {
 
             this.gl.bindVertexArray(bufferCache.vao)
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, bufferCache.indices)
-
-
             this.gl.uniformMatrix4fv(this.uniforms.m, false, new Float32Array(m.m))
 
-            const texture = mesh.texture ? this._loadTexture(mesh.texture) : this.fallbackTexture
+            const texture = mesh.material ? this._getTextureCache(mesh.material) : this.fallbackTexture
             
             this.gl.activeTexture(this.gl.TEXTURE0)
             this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
@@ -187,25 +185,28 @@ export class Renderer  {
     }
 
 
-    private _loadTexture(url: string): WebGLTexture {
-        if (this._textureCache.has(url)) {
-            return this._textureCache.get(url)!
+    private _getTextureCache(material: Material): WebGLTexture {
+        if (this._textureCache.has(material)) {
+            return this._textureCache.get(material)!
         }
 
-        const texture = createFallbackTexture(this.gl, Colors.BLACK)
+        if (!material.bitmap) return this.fallbackTexture
 
-        const image = new Image()
-        image.src = url
-        image.onload = () => {
-            this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
-            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, image)
-            
-            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR_MIPMAP_LINEAR)
-            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR)
-            this.gl.generateMipmap(this.gl.TEXTURE_2D)
-        }
+        const gl = this.gl
+        const texture = gl.createTexture()!
+        gl.bindTexture(gl.TEXTURE_2D, texture)
 
-        this._textureCache.set(url, texture)
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, material.bitmap)
+        
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+        
+        gl.generateMipmap(gl.TEXTURE_2D);
+
+        this._textureCache.set(material, texture)
+        
         return texture
     }
 }

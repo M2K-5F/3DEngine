@@ -122,38 +122,15 @@ export class Mesh {
     }
 
 
-    static async fromGLTF(path: string): Promise<Mesh> {
-        const gltf = await (await fetch(path)).json()
-        const bin = await (await fetch(path.substring(0, path.lastIndexOf('/') + 1) + gltf.buffers[0].uri)).arrayBuffer()
-
-        const read = (idx: number, Cls: any) => {
-            const a = gltf.accessors[idx], v = gltf.bufferViews[a.bufferView]
-            return new Cls(bin, (v.byteOffset || 0) + (a.byteOffset || 0), v.byteLength / Cls.BYTES_PER_ELEMENT)
-        }
-
-        const prim = gltf.meshes[0].primitives[0]
-        const pos = read(prim.attributes.POSITION, Float32Array)
-        const norm = read(prim.attributes.NORMAL, Float32Array)
-        const ind = read(prim.indices, gltf.accessors[prim.indices].componentType === 5123 ? Uint16Array : Uint32Array)
-
-        const verts = new Float32Array(pos.length * 2)
-        for (let i = 0; i < pos.length / 3; i++) {
-            verts.set(pos.subarray(i * 3, i * 3 + 3), i * 6)
-            verts.set(norm.subarray(i * 3, i * 3 + 3), i * 6 + 3)
-        }
-        return new Mesh(new Float32Array(verts), new Uint16Array(ind))
-    }
-
-
     static createCube(size: number = 1) {
         const h = size / 2
         const rawVerts = [
-            -h,-h, h,  -h, h, h,   h, h, h,   h,-h, h, 
-            -h,-h,-h,  -h, h,-h,   h, h,-h,   h,-h,-h, 
-            -h, h,-h,  -h, h, h,   h, h, h,   h, h,-h, 
-            -h,-h,-h,  -h,-h, h,   h,-h, h,   h,-h,-h, 
+            -h,-h, h,  -h, h, h,   h, h, h,   h,-h, h,
+            -h,-h,-h,  -h, h,-h,   h, h,-h,   h,-h,-h,
+            -h, h,-h,  -h, h, h,   h, h, h,   h, h,-h,
+            -h,-h,-h,  -h,-h, h,   h,-h, h,   h,-h,-h,
             h,-h,-h,   h, h,-h,   h, h, h,   h,-h, h, 
-            -h,-h,-h,  -h, h,-h,  -h, h, h,  -h,-h, h  
+            -h,-h,-h,  -h, h,-h,  -h, h, h,  -h,-h, h 
         ]
 
         const normals = [
@@ -165,12 +142,20 @@ export class Mesh {
             -1, 0, 0,  -1, 0, 0,  -1, 0, 0,  -1, 0, 0
         ]
 
+        const uvCoords = [
+            0,0,  0,1,  1,1,  1,0, 
+            1,0,  1,1,  0,1,  0,0, 
+            0,1,  0,0,  1,0,  1,1, 
+            0,0,  0,1,  1,1,  1,0, 
+            1,0,  1,1,  0,1,  0,0, 
+            0,0,  0,1,  1,1,  1,0  
+        ]
+
         const verts: number[] = []
         for (let i = 0; i < rawVerts.length / 3; i++) {
             verts.push(rawVerts[i*3], rawVerts[i*3+1], rawVerts[i*3+2])
-            verts.push(normals[i*3], normals[i*3+1], normals[i*3+2])
-            // Добавляем пустые UV координаты (U, V)
-            verts.push(0.0, 0.0) 
+            verts.push(normals[i*3], normals[i*3+1], normals[i*3+2])   
+            verts.push(uvCoords[i*2], uvCoords[i*2+1])
         }
 
         const idx: number[] = []
@@ -187,14 +172,13 @@ export class Mesh {
         const w = width / 2
         const h = height / 2
         const verts = new Float32Array([
-            // Pos: X, Y, Z    Normal: NX, NY, NZ   UV: U, V
-            -w, 0,  h,         0, 1, 0,             0.0, 0.0,
-            w, 0,  h,         0, 1, 0,             0.0, 0.0,
-            w, 0, -h,         0, 1, 0,             0.0, 0.0,
-            -w, 0, -h,         0, 1, 0,             0.0, 0.0
+            -w, 0,  h,         0, 1, 0,             0, 0,
+            w, 0,  h,         0, 1, 0,             1, 0,
+            w, 0, -h,         0, 1, 0,             1, 1,
+            -w, 0, -h,         0, 1, 0,             0, 1
         ])
         const idx = new Uint16Array([0, 1, 2, 0, 2, 3])
-        return new Mesh(verts, new Uint16Array(idx))
+        return new Mesh(verts, idx)
     }
 
 
@@ -207,14 +191,17 @@ export class Mesh {
             const sinTheta = Math.sin(theta)
             const cosTheta = Math.cos(theta)
 
+            const v = 1.0 - (lat / subdivisions)
+
             for (let lon = 0; lon <= subdivisions; lon++) {
                 const phi = (lon * 2 * Math.PI) / subdivisions
                 const nx = Math.cos(phi) * sinTheta
                 const ny = cosTheta
                 const nz = -Math.sin(phi) * sinTheta
 
-                // Пушим позицию, нормаль и пустые UV
-                verts.push(nx * radius, ny * radius, nz * radius, nx, ny, nz, 0.0, 0.0)
+                const u = lon / subdivisions
+
+                verts.push(nx * radius, ny * radius, nz * radius, nx, ny, nz, u, v)
             }
         }
 
@@ -237,18 +224,20 @@ export class Mesh {
     }
 
 
+
     static createCylinder(segments: number = 16, radius: number = 0.5, height: number = 1) {
         const verts: number[] = []
         const idx: number[] = []
         const h = height / 2
 
         for (let i = 0; i <= segments; i++) {
+            const u = i / segments 
             const angle = (i * 2 * Math.PI) / segments
             const x = Math.cos(angle)
             const z = -Math.sin(angle)
 
-            verts.push(x * radius,  h, z * radius,   x, 0, z,   0.0, 0.0)
-            verts.push(x * radius, -h, z * radius,   x, 0, z,   0.0, 0.0)
+            verts.push(x * radius,  h, z * radius,   x, 0, z,   u, 1.0) 
+            verts.push(x * radius, -h, z * radius,   x, 0, z,   u, 0.0) 
         }
 
         for (let i = 0; i < segments; i++) {
@@ -258,20 +247,30 @@ export class Mesh {
         }
 
         const topCenterIdx = verts.length / 8
-        verts.push(0, h, 0,  0, 1, 0,  0.0, 0.0)
+        verts.push(0, h, 0,  0, 1, 0,  0.5, 0.5) 
 
         for (let i = 0; i <= segments; i++) {
             const angle = (i * 2 * Math.PI) / segments
-            verts.push(Math.cos(angle) * radius, h, -Math.sin(angle) * radius,  0, 1, 0,  0.0, 0.0)
+            const x = Math.cos(angle)
+            const z = -Math.sin(angle)
+            const u = x * 0.5 + 0.5
+            const v = z * 0.5 + 0.5
+            
+            verts.push(x * radius, h, z * radius,  0, 1, 0,  u, v)
             if (i > 0) idx.push(topCenterIdx, topCenterIdx + i, topCenterIdx + i + 1)
         }
 
         const bottomCenterIdx = verts.length / 8
-        verts.push(0, -h, 0,  0, -1, 0,  0.0, 0.0)
+        verts.push(0, -h, 0,  0, -1, 0,  0.5, 0.5)
 
         for (let i = 0; i <= segments; i++) {
             const angle = (i * 2 * Math.PI) / segments
-            verts.push(Math.cos(angle) * radius, -h, -Math.sin(angle) * radius,  0, -1, 0,  0.0, 0.0)
+            const x = Math.cos(angle)
+            const z = -Math.sin(angle)
+            const u = x * 0.5 + 0.5
+            const v = z * 0.5 + 0.5
+            
+            verts.push(x * radius, -h, z * radius,  0, -1, 0,  u, v)
             if (i > 0) idx.push(bottomCenterIdx, bottomCenterIdx + i + 1, bottomCenterIdx + i)
         }
 
