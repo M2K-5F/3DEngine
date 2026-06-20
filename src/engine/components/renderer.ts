@@ -2,20 +2,21 @@ import { MatrixFabric } from "../../maths/matrix4"
 import { ThingTransform } from "../../thing/components/transform"
 import { ThingMesh } from "../../thing/components/mesh"
 import type { Mesh } from "../../shared/mesh"
-import type { Camera } from "./camera"
-import type { Projector } from "./projector"
+import type { CameraRotation } from "./camera"
 import type { Point3 } from "../../maths/point3"
-import type { Vector3 } from "../../maths/vector3"
-import FS_MAIN from "../shaders/benzin.frag?raw"
+import { Vector3 } from "../../maths/vector3"
+import FS_MAIN from "../shaders/game-smoke.frag?raw"
 import VS_MAIN from "../shaders/main.vert?raw"
-import { Colors } from "../../shared/color-constants"
 import type { World } from "../../world/world"
 import type { Material } from "../../shared/material"
 
 export type RendererConfig = {
     width: number
-    height: number
-    fallbackTextureColor: Vector3
+    height: number,
+    far: number,
+    near: number,
+    fov: number
+    fallbackTextureColor: Vector3,
 }
 
 
@@ -31,6 +32,7 @@ export class Renderer  {
     private _meshBufferCache: Map<Mesh, BufferCache> = new Map()
     private _textureCache: Map<Material, WebGLTexture> = new Map()
 
+    private config: RendererConfig
     private canvas: HTMLCanvasElement
     private gl: WebGL2RenderingContext
     private program: WebGLProgram
@@ -59,6 +61,8 @@ export class Renderer  {
     }
     
     constructor(config: RendererConfig) {
+        this.config = config
+
         const root = document.getElementById('root')!
 
         this.canvas = document.createElement('canvas')
@@ -88,7 +92,7 @@ export class Renderer  {
 
         this.gl.enable(this.gl.DEPTH_TEST)
         this.gl.enable(this.gl.CULL_FACE)
-        this.gl.clearColor(1, 1, 1, 0.5)
+        this.gl.clearColor(1, 1, 0, 0.5)
     }
 
 
@@ -109,10 +113,11 @@ export class Renderer  {
     }
 
 
-    public render(camera: Camera, projector: Projector, world: World) {
-        const {far, fov, near, aspect} = projector.config
-        const v = createViewMatrix(camera.position, camera.target, camera.directions.up)
-        const p = createProjectionMatrix(fov, aspect, far, near)
+    public render(world: World) {
+        const camera = world.camera.getCamera()
+
+        const v = createViewMatrix(camera.position, camera.rotation)
+        const p = createProjectionMatrix(this.config.fov, this.config.width/this.config.height, this.config.far, this.config.near)
         const vp = p.multiplyBy(v)
         this.gl.uniformMatrix4fv(this.uniforms.vp, false, new Float32Array(vp.m))
         this.gl.uniform3f(this.uniforms.position, camera.position.x, camera.position.y, camera.position.z)
@@ -135,9 +140,7 @@ export class Renderer  {
             
             this.gl.activeTexture(this.gl.TEXTURE0)
             this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
-
-            const texUniform = this.gl.getUniformLocation(this.program, "uTexture")
-            this.gl.uniform1i(texUniform, 0)
+            this.gl.uniform1i(this.uniforms.texture, 0)
 
             this.gl.drawElements(this.gl.TRIANGLES, bufferCache.indicesCount, this.gl.UNSIGNED_SHORT, 0)
         })
@@ -190,8 +193,6 @@ export class Renderer  {
             return this._textureCache.get(material)!
         }
 
-        if (!material.bitmap) return this.fallbackTexture
-
         const gl = this.gl
         const texture = gl.createTexture()!
         gl.bindTexture(gl.TEXTURE_2D, texture)
@@ -203,7 +204,7 @@ export class Renderer  {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
         
-        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.generateMipmap(gl.TEXTURE_2D)
 
         this._textureCache.set(material, texture)
         
@@ -267,11 +268,18 @@ function createModelMatrix(transform: ThingTransform) {
     )
 }
 
-function createViewMatrix(position: Point3, target: Point3, up: Vector3) {
+function createViewMatrix(position: Point3, rotation: CameraRotation) {
+    const forwardX = Math.sin(rotation.horizontal) * Math.cos(rotation.vertical)
+    const forwardY = -Math.sin(rotation.vertical)
+    const forwardZ = Math.cos(rotation.horizontal) * Math.cos(rotation.vertical)
+
+    const forwardVector = new Vector3(forwardX, forwardY, forwardZ).normalize()
+
+    const target = position.addVector(forwardVector)
     return MatrixFabric.getLookAtMatrix(
             position, 
             target, 
-            up
+            new Vector3(0, 1, 0)
         )
 }
 

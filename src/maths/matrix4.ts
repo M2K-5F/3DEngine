@@ -115,7 +115,7 @@ export class MatrixFabric {
 
 
     static getLookAtMatrix(eye: Point3, target: Point3, up: Vector3): Matrix4 {
-        const z = target.vectorTo(eye).normalize()
+        const z = eye.vectorTo(target).normalize()
         const x = z.cross(up).normalize()
         const y = x.cross(z).normalize()    
         

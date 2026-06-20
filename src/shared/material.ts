@@ -1,7 +1,7 @@
 export class Material {
-    constructor(
+    private constructor(
         public readonly url: string,
-        public bitmap: ImageBitmap | null
+        public bitmap: ImageBitmap
     ) {}
 
 

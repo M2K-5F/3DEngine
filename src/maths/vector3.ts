@@ -31,6 +31,15 @@ export class Vector3 {
         )
     }
 
+
+    multiplyVector(vector: Vector3) {
+        return new Vector3(
+            this.x * vector.x,
+            this.y * vector.y,
+            this.z * vector.z
+        )
+    }
+
     normalize(): Vector3 {
         const length = Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z)
         if (length > 0) {

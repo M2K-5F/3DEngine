@@ -1,6 +1,5 @@
 import type { FrameTime } from '../interfaces'
 import type { World } from '../world/world'
-import type { Projector } from './components/projector'
 import type { Renderer } from './components/renderer'
 
 
@@ -10,7 +9,6 @@ export class BlazingEngine {
 
     constructor(
         private renderer: Renderer,
-        private projector: Projector,
     ) {}
 
     bindWorld(world: World) {
@@ -26,7 +24,7 @@ export class BlazingEngine {
                 loopFn?.(dt)   
 
                 this.renderer.clearFrame()
-                this.renderer.render(world.camera.getCamera(), this.projector, world)
+                this.renderer.render(world)
             }
 
             requestAnimationFrame(loop)
